@@ -1,0 +1,36 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v6.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v6.0": {
+      "ModLr1Test/1.0.0": {
+        "dependencies": {
+          "ModLR1": "1.0.0"
+        },
+        "runtime": {
+          "ModLr1Test.dll": {}
+        }
+      },
+      "ModLR1/1.0.0": {
+        "runtime": {
+          "ModLR1.exe": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "ModLr1Test/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "ModLR1/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
