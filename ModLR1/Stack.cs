@@ -67,6 +67,12 @@ namespace ModLR1
             return popedString;
         }
 
+        //Очищает стэк - перемещает указатель стэка на дно
+        public void Clear()
+        {
+            stackPointer = capacity;
+        }
+
         //Читает верхний элемент стэка, но не перемещает указатель стэка
         public string Poll()
         {

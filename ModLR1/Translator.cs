@@ -1,10 +1,14 @@
-﻿using System;
+﻿using Microsoft.SqlServer.Server;
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace ModLR1
@@ -16,14 +20,13 @@ namespace ModLR1
         при помощи метода translateInfix
         * Translator может посимвольно обрабатывать инфиксную
         строку используя методы next, hasNext, 
-
-    
      */
 
     public class Translator
     {
-        private Stack stack;                //Стэк
+        private Stack stack = new Stack();  //Стэк
         private string currentInfixSequence;//Текущее инфиксное выражение
+        private string currentInfixSequenceEncoded;
         private int infixPointer = 0;       //Указатель на обрабатываемый символ
         /*Константы операций транслятора*/
         private const int OP_PUSH = 1;
@@ -32,8 +35,19 @@ namespace ModLR1
         private const int OP_SUCCESS = 4;
         private const int OP_ERR = 5;
         private const int OP_OUTPUT = 6;
-        /*таблица принятия реешений*/
-        private int[,] actionTable;
+
+        //Таблица принятия решений
+        private int[,] actionTable = new int[,]
+            {   //     |$         |+      |-      |*      |/      |^      |(      |F      |)         |P
+                /* $ */{OP_SUCCESS,OP_PUSH,OP_PUSH,OP_PUSH,OP_PUSH,OP_PUSH,OP_PUSH,OP_PUSH,OP_ERR    ,OP_OUTPUT},
+                /* + */{OP_POP    ,OP_POP ,OP_POP ,OP_PUSH,OP_PUSH,OP_PUSH,OP_PUSH,OP_PUSH,OP_POP    ,OP_OUTPUT},
+                /* - */{OP_POP    ,OP_POP ,OP_POP ,OP_PUSH,OP_PUSH,OP_PUSH,OP_PUSH,OP_PUSH,OP_POP    ,OP_OUTPUT},
+                /* * */{OP_POP    ,OP_POP ,OP_POP ,OP_POP ,OP_POP ,OP_PUSH,OP_PUSH,OP_PUSH,OP_POP    ,OP_OUTPUT},
+                /* / */{OP_POP    ,OP_POP ,OP_POP ,OP_POP ,OP_POP ,OP_PUSH,OP_PUSH,OP_PUSH,OP_POP    ,OP_OUTPUT},
+                /* ^ */{OP_POP    ,OP_POP ,OP_POP ,OP_POP ,OP_POP ,OP_POP ,OP_PUSH,OP_PUSH,OP_POP    ,OP_OUTPUT},
+                /* ( */{OP_ERR    ,OP_PUSH,OP_PUSH,OP_PUSH,OP_PUSH,OP_PUSH,OP_PUSH,OP_PUSH,OP_DEL_PAR,OP_OUTPUT},
+                /* F */{OP_POP    ,OP_POP ,OP_POP ,OP_POP ,OP_POP ,OP_POP ,OP_PUSH,OP_ERR ,OP_POP    ,OP_OUTPUT}
+            };
         /*Константы арифметических операция*/
         /*Нужны для организации доступа к таблице принятия решений*/
         private const int ARF_EMPTY = 0;
@@ -41,12 +55,26 @@ namespace ModLR1
         private const int ARF_MINUS = 2;
         private const int ARF_MULT = 3;
         private const int ARF_DIV = 4;
-        private const int ARF_OPEN_PAR = 5;
-        private const int ARF_CLOSE_PAR = 6;
-        private const int ARF_SYMBOL = 7;
+        private const int ARF_POW = 5;
+        private const int ARF_OPEN_PAR = 6;
+        private const int ARF_FUNCTION = 7;
+        private const int ARF_CLOSE_PAR = 8;
+        private const int ARF_VARIABLE = 9;
 
 
-        private Dictionary<int, string> dic;
+        private Dictionary<string, string> funcionEncodeDictionary = new Dictionary<string, string>()
+        {
+            {"sin","в"},
+            {"cos","г"},
+            {"ln","и"}
+        };
+
+        private Dictionary<string, string> functionDecodeDictionary = new Dictionary<string, string>()
+        {
+            {"в","sin"},
+            {"г","cos"},
+            {"и","ln"}
+        };
 
         private const string OP_RES_SUCCESS = "SUCCESS";
         private const string OP_RES_ERR = "ERROR";
@@ -54,44 +82,45 @@ namespace ModLR1
         private const string OP_RES_PUSH = "PUSH";
 
 
-        public Translator()
-        {
-            stack = new Stack();
-            actionTable = new int[,]
-            {
-                {4,1,1,1,1,1,5,6},
-                {2,2,2,1,1,1,2,6},
-                {2,2,2,1,1,1,2,6},
-                {2,2,2,2,2,1,2,6},
-                {2,2,2,2,2,1,2,6},
-                {5,1,1,1,1,1,3,6}
-            };
-            
-        }
+        private Regex functionRegex = new Regex("[а-яА-Я]");
+
+        public Translator(){}
         public Translator(string infixSequence)
         {
-            currentInfixSequence = infixSequence;
-            stack = new Stack();
-            actionTable = new int[,]
-            {
-                {4,1,1,1,1,1,5,6},
-                {2,2,2,1,1,1,2,6},
-                {2,2,2,1,1,1,2,6},
-                {2,2,2,2,2,1,2,6},
-                {2,2,2,2,2,1,2,6},
-                {5,1,1,1,1,1,3,6}
-            };
+            changeInfixSequence(infixSequence);
         }
 
         public void changeInfixSequence(string newInfixSequence)
         {
-            infixPointer = 0;
+            clearStackAndInfixPointer();
             currentInfixSequence = newInfixSequence;
+            currentInfixSequenceEncoded = encodeInfix(currentInfixSequence);
+        }
+
+        private string encodeInfix(string infix)
+        {
+            string encoded = infix;
+            foreach (KeyValuePair<string, string> entry in funcionEncodeDictionary)
+            {
+                encoded = encoded.Replace(entry.Key, entry.Value);
+            }
+            return encoded;
+        }
+
+        private string decodePostfix(string postfix)
+        {
+            string encoded = postfix;
+            foreach (KeyValuePair<string, string> entry in functionDecodeDictionary)
+            {
+                encoded = encoded.Replace(entry.Key, entry.Value);
+            }
+            return encoded;
         }
 
 
         public string translateInfix()
         {
+            clearStackAndInfixPointer();
             StringBuilder sb = new StringBuilder();
             while (hasNext())
             {
@@ -104,6 +133,8 @@ namespace ModLR1
                         break;
                     case OP_RES_DEL_PAR:
                         break;
+                    case OP_RES_SUCCESS:
+                        break;
                     default:
                         {
                             sb.Append(operationResult);
@@ -111,7 +142,7 @@ namespace ModLR1
                         }
                 }
             }
-            return sb.ToString();
+            return decodePostfix(sb.ToString());
         }
 
         public string processTranslatorOperation(int OP_CODE)
@@ -120,13 +151,13 @@ namespace ModLR1
             {
                 case OP_PUSH:
                     {
-                        stack.Push(currentInfixSequence[infixPointer++].ToString());
+                        stack.Push(currentInfixSequenceEncoded[infixPointer++].ToString());
                         return OP_RES_PUSH;
                     }
                 case OP_POP:
                     return stack.Pop();
                 case OP_OUTPUT:
-                    return currentInfixSequence[infixPointer++].ToString();
+                    return currentInfixSequenceEncoded[infixPointer++].ToString();
                 case OP_ERR:
                     return OP_RES_ERR;
                 case OP_DEL_PAR:
@@ -153,9 +184,9 @@ namespace ModLR1
         //Читает элемент строки на который указывает указатель
         public int nextInfixCode()
         {
-            if (infixPointer == currentInfixSequence.Length)
+            if (infixPointer == currentInfixSequenceEncoded.Length)
                 return ARF_EMPTY;
-            switch (currentInfixSequence[infixPointer].ToString())
+            switch (currentInfixSequenceEncoded[infixPointer].ToString())
             {
                 case "+":
                     return ARF_PLUS;
@@ -169,8 +200,14 @@ namespace ModLR1
                     return ARF_OPEN_PAR;
                 case ")":
                     return ARF_CLOSE_PAR;
-                default: 
-                    return ARF_SYMBOL;
+                case "^":
+                    return ARF_POW;
+                default:
+                    {
+                        if (Regex.IsMatch(currentInfixSequenceEncoded[infixPointer].ToString(),"[а-яА-Я]"))
+                            return ARF_FUNCTION;
+                        return ARF_VARIABLE;
+                    }
             }
         }
         //Читает верхний элемент стэка
@@ -192,14 +229,29 @@ namespace ModLR1
                     return ARF_OPEN_PAR;
                 case ")":
                     return ARF_CLOSE_PAR;
-                default: throw new Exception("Illegal argument exception: unsupported symbol in Translator!");
+                case "^":
+                    return ARF_POW;
+                default:
+                    {
+                        if (Regex.IsMatch(stack.Poll(), "[а-яА-Я]"))
+                        {
+                            return ARF_FUNCTION;
+                        }
+                        throw new Exception("Illegal argument exception: unsupported symbol in Translator!");
+                    };
             }
         }
         //Возвращает true если есть символы которые нужно обработать в
         //инфиксной последовательности или в стэке
         public bool hasNext()
         {
-            return infixPointer != currentInfixSequence.Length || !stack.isEmpty();
+            return infixPointer != currentInfixSequenceEncoded.Length || !stack.isEmpty();
+        }
+
+        public void clearStackAndInfixPointer()
+        {
+            infixPointer = 0;
+            stack.Clear();
         }
 
 
