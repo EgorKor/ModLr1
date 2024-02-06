@@ -33,43 +33,26 @@ namespace ModLR1
     public partial class Form1 : Form
     {
 
-        Stack stack;
-        private const int CAPACITY = 10;
+        Translator translator = new Translator();
         private int dY = 10;
 
         public Form1()
         {
             InitializeComponent();
-            init();
-            for(int i = 0; i < 5; i++)
-            {
-                push($"{i}");
-            }
-            outputTextBox.Text += pop();
-            outputTextBox.Text += pop();
-            stackTextBox.Text = stack.ToString();
         }
 
-        private string pop()
+
+        private void inputInfixButton_Click(object sender, EventArgs e)
         {
-            if (dY < 0)
-                dY = -dY;
-            stackPointerLabel.Location = new Point(stackPointerLabel.Location.X, stackPointerLabel.Location.Y + dY);
-            return stack.Pop();
+            string infixString = openInfixDialog();
+            inputTextBox.Text = infixString;
         }
 
-        private void push(string s)
+        public string openInfixDialog()
         {
-            stack.Push(s);
-            if(dY > 0)
-                dY = -dY;
-            stackPointerLabel.Location = new Point(stackPointerLabel.Location.X, stackPointerLabel.Location.Y + dY);
+            Form prompt = new InputInfixForm();
+            prompt.ShowDialog();
+            return ((InputInfixForm)prompt).infixTextBox.Text;
         }
-
-        private void init()
-        {
-            stack = new Stack(CAPACITY);
-        }
-
     }
 }

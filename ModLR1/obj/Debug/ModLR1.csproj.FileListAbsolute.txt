@@ -8,3 +8,4 @@ C:\Users\Егор\Desktop\Программная инженерия\Семест
 C:\Users\Егор\Desktop\Программная инженерия\Семестр 6\Моделирование\лаба 1\код\ModLR1\ModLR1\obj\Debug\ModLR1.csproj.CoreCompileInputs.cache
 C:\Users\Егор\Desktop\Программная инженерия\Семестр 6\Моделирование\лаба 1\код\ModLR1\ModLR1\obj\Debug\ModLR1.exe
 C:\Users\Егор\Desktop\Программная инженерия\Семестр 6\Моделирование\лаба 1\код\ModLR1\ModLR1\obj\Debug\ModLR1.pdb
+C:\Users\Егор\Desktop\Программная инженерия\Семестр 6\Моделирование\лаба 1\код\ModLR1\ModLR1\obj\Debug\ModLR1.InputInfixForm.resources

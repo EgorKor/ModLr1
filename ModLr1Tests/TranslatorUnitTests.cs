@@ -51,10 +51,48 @@ namespace ModLr1Tests
         }
 
         [TestMethod]
-        public void InfixTest7()
+        [ExpectedException(typeof(SyntaxValidationException),
+            "Oh my god, we can't divison on zero")]
+        public void InfixTest7_SyntaxValidationException()
         {
-            translator.changeInfixSequence("a+");
-            Assert.AreEqual("", translator.translateInfix());
+            translator.changeInfixSequence("a+*d");
+            translator.translateInfix();
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(SyntaxValidationException),
+            "Oh my god, we can't divison on zero")]
+        public void InfixTest8_SyntaxValidationException()
+        {
+            translator.changeInfixSequence("ad");
+            translator.translateInfix();
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(SyntaxValidationException),
+            "Oh my god, we can't divison on zero")]
+        public void InfixTest9_SyntaxValidationException()
+        {
+            translator.changeInfixSequence("a(");
+            translator.translateInfix();
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(SyntaxValidationException),
+            "Oh my god, we can't divison on zero")]
+        public void InfixTest10_SyntaxValidationException()
+        {
+            translator.changeInfixSequence(")(");
+            translator.translateInfix();
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(SyntaxValidationException),
+            "Oh my god, we can't divison on zero")]
+        public void InfixTest11_SyntaxValidationException()
+        {
+            translator.changeInfixSequence("sincos");
+            translator.translateInfix();
         }
 
 

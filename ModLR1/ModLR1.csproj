@@ -46,6 +46,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="InputInfixForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="InputInfixForm.Designer.cs">
+      <DependentUpon>InputInfixForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Stack.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
@@ -55,9 +61,13 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SyntaxValidationException.cs" />
     <Compile Include="Translator.cs" />
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="InputInfixForm.resx">
+      <DependentUpon>InputInfixForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
@@ -81,5 +91,6 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

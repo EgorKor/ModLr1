@@ -34,6 +34,7 @@
             this.inputLabel = new System.Windows.Forms.Label();
             this.stackTextBox = new System.Windows.Forms.RichTextBox();
             this.stackPointerLabel = new System.Windows.Forms.Label();
+            this.inputInfixButton = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // outputTextBox
@@ -89,11 +90,22 @@
             this.stackPointerLabel.TabIndex = 5;
             this.stackPointerLabel.Text = "→";
             // 
+            // inputInfixButton
+            // 
+            this.inputInfixButton.Location = new System.Drawing.Point(505, 260);
+            this.inputInfixButton.Name = "inputInfixButton";
+            this.inputInfixButton.Size = new System.Drawing.Size(75, 23);
+            this.inputInfixButton.TabIndex = 6;
+            this.inputInfixButton.Text = "ввести строку";
+            this.inputInfixButton.UseVisualStyleBackColor = true;
+            this.inputInfixButton.Click += new System.EventHandler(this.inputInfixButton_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(984, 561);
+            this.Controls.Add(this.inputInfixButton);
             this.Controls.Add(this.stackPointerLabel);
             this.Controls.Add(this.stackTextBox);
             this.Controls.Add(this.inputLabel);
@@ -117,6 +129,7 @@
         private System.Windows.Forms.Label inputLabel;
         private System.Windows.Forms.RichTextBox stackTextBox;
         private System.Windows.Forms.Label stackPointerLabel;
+        private System.Windows.Forms.Button inputInfixButton;
     }
 }
 
