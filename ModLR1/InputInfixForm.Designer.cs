@@ -295,7 +295,7 @@
             this.infixTextBox.Size = new System.Drawing.Size(714, 96);
             this.infixTextBox.TabIndex = 2;
             this.infixTextBox.Tag = "123";
-            this.infixTextBox.Text = "123";
+            this.infixTextBox.Text = "";
             // 
             // okButton
             // 

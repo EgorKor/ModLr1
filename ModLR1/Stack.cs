@@ -62,7 +62,6 @@ namespace ModLR1
                 throw new Exception("Illegal action exception: Stack is empty!");
             }
             string popedString = data[stackPointer];
-            data[stackPointer] = "";
             stackPointer++;
             return popedString;
         }
@@ -93,7 +92,7 @@ namespace ModLR1
         {
             StringBuilder sb = new StringBuilder();
             for(int i = 0; i < capacity - 1; i++) { 
-                sb.Append(data[i]).Append("\n");
+                sb.Append(data[i] == "" ? "0x00": data[i]).Append("\n");
             }
             sb.Append(data[capacity - 1]);
             return sb.ToString();

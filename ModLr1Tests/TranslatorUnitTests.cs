@@ -5,7 +5,8 @@ namespace ModLr1Tests
     [TestClass]
     public class TranslatorUnitTests
     {
-        public Translator translator = new Translator(); 
+        public Translator translator = new Translator();
+        
 
         [TestMethod]
         public void InfixTest1()
@@ -95,6 +96,12 @@ namespace ModLr1Tests
             translator.translateInfix();
         }
 
+        [TestMethod]
+        public void InfixTest12()
+        {
+            translator.changeInfixSequence("a*sin(b)");
+            Assert.AreEqual("absin*", translator.translateInfix());
+        }
 
     }
 }

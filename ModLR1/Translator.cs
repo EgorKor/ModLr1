@@ -4,6 +4,7 @@ using System.CodeDom;
 using System.Collections;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Data.Odbc;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -26,18 +27,18 @@ namespace ModLR1
     public class Translator
     {
         private Stack stack = new Stack();  //Стэк
-        private string currentInfixSequence;//Текущее инфиксное выражение
-        private string currentInfixSequenceEncoded;
-        private int infixPointer = 0;       //Указатель на обрабатываемый символ
+        public string currentInfixSequence;//Текущее инфиксное выражение
+        public string currentInfixSequenceEncoded;
+        public int infixPointer = 0;       //Указатель на обрабатываемый символ
         /*Константы операций транслятора*/
-        private const int OP_PUSH = 1;
-        private const int OP_POP = 2;
-        private const int OP_DEL_PAR = 3;
-        private const int OP_SUCCESS = 4;
-        private const int OP_ERR_CLOSE = 5;
-        private const int OP_ERR_OPEN = 6;
-        private const int OP_ERR_FUNC = 7;
-        private const int OP_OUTPUT = 8;
+        public const int OP_PUSH = 1;
+        public const int OP_POP = 2;
+        public const int OP_DEL_PAR = 3;
+        public const int OP_SUCCESS = 4;
+        public const int OP_ERR_CLOSE = 5;
+        public const int OP_ERR_OPEN = 6;
+        public const int OP_ERR_FUNC = 7;
+        public const int OP_OUTPUT = 8;
 
         //Таблица принятия решений
         private int[,] actionTable = new int[,]
@@ -65,7 +66,7 @@ namespace ModLR1
         private const int ARF_VARIABLE = 9;
 
         //словарь кодирования
-        private Dictionary<string, string> funcionEncodeDictionary = new Dictionary<string, string>()
+        public Dictionary<string, string> funcionEncodeDictionary = new Dictionary<string, string>()
         {
             {"sin","в"},
             {"cos","г"},
@@ -73,7 +74,7 @@ namespace ModLR1
         };
 
         //словарь декодирования
-        private Dictionary<string, string> functionDecodeDictionary = new Dictionary<string, string>()
+        public Dictionary<string, string> functionDecodeDictionary = new Dictionary<string, string>()
         {
             {"в","sin"},
             {"г","cos"},
@@ -81,7 +82,7 @@ namespace ModLR1
         };
 
         //словарь кодов символов и самих символов
-        private Dictionary<int, string> arfCodeDictionary = new Dictionary<int, string>()
+        public Dictionary<int, string> arfCodeDictionary = new Dictionary<int, string>()
         {
             {ARF_EMPTY, ""},
             {ARF_DIV,"/"},
@@ -116,7 +117,7 @@ namespace ModLR1
         }
 
         //Метод кодирования инфиксной строки
-        private string encodeInfix(string infix)
+        public string encodeInfix(string infix)
         {
             string encoded = infix;
             foreach (KeyValuePair<string, string> entry in funcionEncodeDictionary)
@@ -127,7 +128,7 @@ namespace ModLR1
         }
 
         //Метод декодирования постфиксной строки
-        private string decodePostfix(string postfix)
+        public string decodePostfix(string postfix)
         {
             string decoded = postfix;
             foreach (KeyValuePair<string, string> entry in functionDecodeDictionary)
@@ -147,9 +148,10 @@ namespace ModLR1
             while (hasNext())
             {
                 int beforeOperationCode = nextInfixCode();
-                string operationResult = processTranslatorOperation(currentOperation());
+                int operation = currentOperation();
+                string operationResult = processTranslatorOperation(operation);
                 int afterOperationCode = nextInfixCode();
-                if (currentOperation() != OP_POP) {
+                if (operation != OP_POP) {
                     validateInfix(beforeOperationCode, afterOperationCode);
                 }
                 switch (operationResult)
@@ -191,15 +193,19 @@ namespace ModLR1
                 secondCode == ARF_POW   ||
                 secondCode == ARF_DIV))
             {
-                throw new SyntaxValidationException($"Syntax Validation Exception: two arifmetical operations in row! operation #1 = {arfCodeDictionary[firstCode]} operation #2 = {arfCodeDictionary[secondCode]}");
+                throw new SyntaxValidationException($"Syntax Validation Exception: two arifmetical operations in row!\noperation #1 = {arfCodeDictionary[firstCode]} operation #2 = {arfCodeDictionary[secondCode]}");
             }
             if (firstCode == ARF_VARIABLE && secondCode == ARF_VARIABLE)
             {
-                throw new SyntaxValidationException($"Syntax Validation Exception: two variables in row! var #1 = {currentInfixSequenceEncoded[infixPointer]} var #2 = {currentInfixSequenceEncoded[infixPointer - 1]}");
+                throw new SyntaxValidationException($"Syntax Validation Exception: two variables in row!\nvar #1 = {currentInfixSequenceEncoded[infixPointer]} var #2 = {currentInfixSequenceEncoded[infixPointer - 1]}");
             }
             if (firstCode == ARF_VARIABLE && secondCode==ARF_OPEN_PAR)
             {
-                throw new SyntaxValidationException($"Syntax Validation Exception: between variable and opening parthese no operation! var = {currentInfixSequenceEncoded[infixPointer - 1]}");
+                throw new SyntaxValidationException($"Syntax Validation Exception: between variable and opening parthese no operation!\nvar = {currentInfixSequenceEncoded[infixPointer - 1]}");
+            }
+            if(firstCode == ARF_FUNCTION  && secondCode != ARF_OPEN_PAR)
+            {
+                throw new SyntaxValidationException($"Syntax Validation Exception: no opening parthese for function!\nfunc = {functionDecodeDictionary[currentInfixSequenceEncoded[infixPointer - 1].ToString()]}");
             }
         }
 
@@ -312,6 +318,11 @@ namespace ModLR1
         {
             infixPointer = 0;
             stack.Clear();
+        }
+
+        public Stack getStack()
+        {
+            return stack;
         }
 
 

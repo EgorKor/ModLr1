@@ -60,7 +60,7 @@ namespace ModLR1
 
         private void backspaceButton_Click(object sender, EventArgs e)
         {
-            infixTextBox.Text = infixTextBox.Text.Substring(0, Text.Length - 1);
+            infixTextBox.Text = infixTextBox.Text.Substring(0, infixTextBox.Text.Length - 1);
         }
 
         private void clearButton_Click(object sender, EventArgs e)

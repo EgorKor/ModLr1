@@ -2,10 +2,10 @@ C:\Users\Егор\Desktop\Программная инженерия\Семест
 C:\Users\Егор\Desktop\Программная инженерия\Семестр 6\Моделирование\лаба 1\код\ModLR1\ModLR1\bin\Debug\ModLR1.exe
 C:\Users\Егор\Desktop\Программная инженерия\Семестр 6\Моделирование\лаба 1\код\ModLR1\ModLR1\bin\Debug\ModLR1.pdb
 C:\Users\Егор\Desktop\Программная инженерия\Семестр 6\Моделирование\лаба 1\код\ModLR1\ModLR1\obj\Debug\ModLR1.csproj.AssemblyReference.cache
-C:\Users\Егор\Desktop\Программная инженерия\Семестр 6\Моделирование\лаба 1\код\ModLR1\ModLR1\obj\Debug\ModLR1.Form1.resources
 C:\Users\Егор\Desktop\Программная инженерия\Семестр 6\Моделирование\лаба 1\код\ModLR1\ModLR1\obj\Debug\ModLR1.Properties.Resources.resources
 C:\Users\Егор\Desktop\Программная инженерия\Семестр 6\Моделирование\лаба 1\код\ModLR1\ModLR1\obj\Debug\ModLR1.csproj.GenerateResource.cache
 C:\Users\Егор\Desktop\Программная инженерия\Семестр 6\Моделирование\лаба 1\код\ModLR1\ModLR1\obj\Debug\ModLR1.csproj.CoreCompileInputs.cache
 C:\Users\Егор\Desktop\Программная инженерия\Семестр 6\Моделирование\лаба 1\код\ModLR1\ModLR1\obj\Debug\ModLR1.exe
 C:\Users\Егор\Desktop\Программная инженерия\Семестр 6\Моделирование\лаба 1\код\ModLR1\ModLR1\obj\Debug\ModLR1.pdb
 C:\Users\Егор\Desktop\Программная инженерия\Семестр 6\Моделирование\лаба 1\код\ModLR1\ModLR1\obj\Debug\ModLR1.InputInfixForm.resources
+C:\Users\Егор\Desktop\Программная инженерия\Семестр 6\Моделирование\лаба 1\код\ModLR1\ModLR1\obj\Debug\ModLR1.MainForm.resources
