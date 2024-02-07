@@ -27,9 +27,58 @@ namespace ModLR1
     public class Translator
     {
         private Stack stack = new Stack();  //Стэк
-        public string currentInfixSequence;//Текущее инфиксное выражение
-        public string currentInfixSequenceEncoded;
-        public int infixPointer = 0;       //Указатель на обрабатываемый символ
+        private string currentInfixSequence;//Текущее инфиксное выражение
+        private string currentInfixSequenceEncoded;//Текущее инфиксное выражение после кодирования
+        private int infixPointer = 0;       //Указатель на обрабатываемый символ
+
+        //словарь кодирования функций инфикскной строки
+        private Dictionary<string, string> funcionEncodeDictionary = new Dictionary<string, string>()
+        {
+            {"sin","в"},
+            {"cos","г"},
+            {"ln","и"}
+        };
+
+        //словарь декодирования функций постфиксной строки
+        private Dictionary<string, string> functionDecodeDictionary = new Dictionary<string, string>()
+        {
+            {"в","sin"},
+            {"г","cos"},
+            {"и","ln"}
+        };
+
+        //словарь кодов символов и самих символов
+        private Dictionary<int, string> arfCodeDictionary = new Dictionary<int, string>()
+        {
+            {ARF_EMPTY, ""},
+            {ARF_DIV,"/"},
+            {ARF_MULT,"*"},
+            {ARF_PLUS,"+"},
+            {ARF_MINUS,"-"},
+            {ARF_POW,"^"},
+            {ARF_CLOSE_PAR,")"},
+            {ARF_OPEN_PAR,"("}
+        };
+
+        /*Константы - результаты операций*/
+        public const string OP_RES_SUCCESS = "SUCCESS";
+        public const string OP_RES_ERR_CLOSE = "ERROR_CLOSE_PAR";
+        public const string OP_RES_ERR_OPEN = "ERROR_OPEN_PAR";
+        public const string OP_RES_ERR_FUNC = "ERROR_FUNC";
+        public const string OP_RES_DEL_PAR = "DELPAR";
+        public const string OP_RES_PUSH = "PUSH";
+        /*Константы арифметических операция*/
+        /*Нужны для организации доступа к таблице принятия решений*/
+        private const int ARF_EMPTY = 0;
+        private const int ARF_PLUS = 1;
+        private const int ARF_MINUS = 2;
+        private const int ARF_MULT = 3;
+        private const int ARF_DIV = 4;
+        private const int ARF_POW = 5;
+        private const int ARF_OPEN_PAR = 6;
+        private const int ARF_FUNCTION = 7;
+        private const int ARF_CLOSE_PAR = 8;
+        private const int ARF_VARIABLE = 9;
         /*Константы операций транслятора*/
         public const int OP_PUSH = 1;
         public const int OP_POP = 2;
@@ -52,72 +101,25 @@ namespace ModLR1
                 /* ( */{OP_ERR_OPEN,OP_PUSH,OP_PUSH,OP_PUSH,OP_PUSH,OP_PUSH,OP_PUSH,OP_PUSH     ,OP_DEL_PAR  ,OP_OUTPUT},
                 /* F */{OP_POP     ,OP_POP ,OP_POP ,OP_POP ,OP_POP ,OP_POP ,OP_PUSH,OP_ERR_FUNC ,OP_POP      ,OP_OUTPUT}
             };
-        /*Константы арифметических операция*/
-        /*Нужны для организации доступа к таблице принятия решений*/
-        private const int ARF_EMPTY = 0;
-        private const int ARF_PLUS = 1;
-        private const int ARF_MINUS = 2;
-        private const int ARF_MULT = 3;
-        private const int ARF_DIV = 4;
-        private const int ARF_POW = 5;
-        private const int ARF_OPEN_PAR = 6;
-        private const int ARF_FUNCTION = 7;
-        private const int ARF_CLOSE_PAR = 8;
-        private const int ARF_VARIABLE = 9;
 
-        //словарь кодирования
-        public Dictionary<string, string> funcionEncodeDictionary = new Dictionary<string, string>()
-        {
-            {"sin","в"},
-            {"cos","г"},
-            {"ln","и"}
-        };
-
-        //словарь декодирования
-        public Dictionary<string, string> functionDecodeDictionary = new Dictionary<string, string>()
-        {
-            {"в","sin"},
-            {"г","cos"},
-            {"и","ln"}
-        };
-
-        //словарь кодов символов и самих символов
-        public Dictionary<int, string> arfCodeDictionary = new Dictionary<int, string>()
-        {
-            {ARF_EMPTY, ""},
-            {ARF_DIV,"/"},
-            {ARF_MULT,"*"},
-            {ARF_PLUS,"+"},
-            {ARF_MINUS,"-"},
-            {ARF_POW,"^"},
-            {ARF_CLOSE_PAR,")"},
-            {ARF_OPEN_PAR,"("}
-        };
-
-
-        public const string OP_RES_SUCCESS = "SUCCESS";
-        public const string OP_RES_ERR_CLOSE = "ERROR_CLOSE_PAR";
-        public const string OP_RES_ERR_OPEN = "ERROR_OPEN_PAR";
-        public const string OP_RES_ERR_FUNC = "ERROR_FUNC";
-        public const string OP_RES_DEL_PAR = "DELPAR";
-        public const string OP_RES_PUSH = "PUSH";
-
-        public Translator(){}
+        public Translator(){ changeInfixSequence(""); }
         public Translator(string infixSequence)
         {
             changeInfixSequence(infixSequence);
         }
+
+        
 
         //Метод меняющий обрабатываемую строку транслятором
         public void changeInfixSequence(string newInfixSequence)
         {
             clearStackAndInfixPointer();
             currentInfixSequence = newInfixSequence;
-            currentInfixSequenceEncoded = encodeInfix(currentInfixSequence);
+            currentInfixSequenceEncoded = encodeFunctions(currentInfixSequence);
         }
 
-        //Метод кодирования инфиксной строки
-        public string encodeInfix(string infix)
+        //Метод кодирования алгебраического выражения
+        public string encodeFunctions(string infix)
         {
             string encoded = infix;
             foreach (KeyValuePair<string, string> entry in funcionEncodeDictionary)
@@ -127,8 +129,8 @@ namespace ModLR1
             return encoded;
         }
 
-        //Метод декодирования постфиксной строки
-        public string decodePostfix(string postfix)
+        //Метод декодирования алгебраического выражения
+        public string decodeFunctions(string postfix)
         {
             string decoded = postfix;
             foreach (KeyValuePair<string, string> entry in functionDecodeDictionary)
@@ -157,12 +159,12 @@ namespace ModLR1
                 switch (operationResult)
                 {
                     case OP_RES_ERR_OPEN:
-                        throw new SyntaxValidationException("Syntax error exception: there is no pair for closing parenthesis )!");
+                        throw new SyntaxValidationException("Ошибка синтаксической валидации: нет пары для закрывающей скобки )!");
                     case OP_RES_ERR_CLOSE:
-                        throw new SyntaxValidationException("Syntax error exception: there is no pair for open parenthesis (!");
+                        throw new SyntaxValidationException("Ошибка синтаксической валидации: нет пары для открывающей скобки (!");
                     case OP_RES_ERR_FUNC:
-                        throw new SyntaxValidationException($"Syntax error exception: function parenthesis structure problem!\n" +
-                            $"func #1 = {functionDecodeDictionary[stack.Poll()]} func #2 = {functionDecodeDictionary[currentInfixSequenceEncoded[infixPointer].ToString()]}"); ;
+                        throw new SyntaxValidationException($"Ошибка синтаксической валидации: ошибка в структуре скобок функции!\n" +
+                            $"фукнция #1 = {functionDecodeDictionary[stack.Poll()]} фукнция #2 = {functionDecodeDictionary[currentInfixSequenceEncoded[infixPointer].ToString()]}"); ;
                     case OP_RES_PUSH:
                     case OP_RES_DEL_PAR:
                     case OP_RES_SUCCESS:
@@ -174,7 +176,7 @@ namespace ModLR1
                         }
                 }
             }
-            return decodePostfix(sb.ToString());
+            return decodeFunctions(sb.ToString());
         }
 
         public void validateInfix(int firstCode, int secondCode)
@@ -193,19 +195,19 @@ namespace ModLR1
                 secondCode == ARF_POW   ||
                 secondCode == ARF_DIV))
             {
-                throw new SyntaxValidationException($"Syntax Validation Exception: two arifmetical operations in row!\noperation #1 = {arfCodeDictionary[firstCode]} operation #2 = {arfCodeDictionary[secondCode]}");
+                throw new SyntaxValidationException($"Ошибка синтаксической валидации: подряд две операции!\nоперация #1 = {arfCodeDictionary[firstCode]} операция #2 = {arfCodeDictionary[secondCode]}");
             }
             if (firstCode == ARF_VARIABLE && secondCode == ARF_VARIABLE)
             {
-                throw new SyntaxValidationException($"Syntax Validation Exception: two variables in row!\nvar #1 = {currentInfixSequenceEncoded[infixPointer]} var #2 = {currentInfixSequenceEncoded[infixPointer - 1]}");
+                throw new SyntaxValidationException($"Ошибка синтаксической валидации: подряд две переменные!\nпеременная #1 = {currentInfixSequenceEncoded[infixPointer]} переменная #2 = {currentInfixSequenceEncoded[infixPointer - 1]}");
             }
             if (firstCode == ARF_VARIABLE && secondCode==ARF_OPEN_PAR)
             {
-                throw new SyntaxValidationException($"Syntax Validation Exception: between variable and opening parthese no operation!\nvar = {currentInfixSequenceEncoded[infixPointer - 1]}");
+                throw new SyntaxValidationException($"Ошибка синтаксической валидации: между скобкой и переменной нет операции!\nпеременная = {currentInfixSequenceEncoded[infixPointer - 1]}");
             }
             if(firstCode == ARF_FUNCTION  && secondCode != ARF_OPEN_PAR)
             {
-                throw new SyntaxValidationException($"Syntax Validation Exception: no opening parthese for function!\nfunc = {functionDecodeDictionary[currentInfixSequenceEncoded[infixPointer - 1].ToString()]}");
+                throw new SyntaxValidationException($"Ошибка синтаксической валидации: отсутствует открывающая скобка после функции!\nфукция = {functionDecodeDictionary[currentInfixSequenceEncoded[infixPointer - 1].ToString()]}");
             }
         }
 
@@ -243,13 +245,13 @@ namespace ModLR1
         }
 
 
-        //Возвращает результат трансляции инфиксного символа
+        //Возвращает текущую операцию по состоянию стека и входной строки
         public int currentOperation()
         {
             return actionTable[nextStackCode(), nextInfixCode()];
         }
 
-        //Читает элемент строки на который указывает указатель
+        //Читает и возвращает элемент строки на который указывает указатель
         public int nextInfixCode()
         {
             if (infixPointer == currentInfixSequenceEncoded.Length)
@@ -278,7 +280,7 @@ namespace ModLR1
                     }
             }
         }
-        //Читает верхний элемент стэка
+        //Читает и возвращает верхний элемент стэка
         public int nextStackCode()
         {
             if (stack.isEmpty())
@@ -325,6 +327,35 @@ namespace ModLR1
             return stack;
         }
 
+        public Dictionary<int, string> getArfCodeDictionary()
+        {
+            return new Dictionary<int, string>(arfCodeDictionary);
+        }
+
+        public Dictionary<string, string> getFunctionEncodeDictionary()
+        {
+            return new Dictionary<string, string>(funcionEncodeDictionary);
+        }
+
+        public Dictionary<string, string> getFunctionDecodeDictionary()
+        {
+            return new Dictionary<string, string>(functionDecodeDictionary);
+        }
+
+        public int getInfixPointer()
+        {
+            return infixPointer;
+        }
+
+        public string getCurrentInfixSequence()
+        {
+            return currentInfixSequence;
+        }
+
+        public string getCurrentInfixSequenceEncoded()
+        {
+            return currentInfixSequenceEncoded;
+        }
 
 
     }

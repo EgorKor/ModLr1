@@ -4,8 +4,11 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -34,16 +37,31 @@ namespace ModLR1
     public partial class MainForm : Form
     {
 
-        Translator translator = new Translator();
-        Stack translatorStack;
+        private Translator translator;
+        private Stack translatorStack;
         private Point stackPointerStartLoc;
-        private int dY = 20;
+        private int dY;
         private RichTextBox[,] actionTable;
         private RichTextBox lastMarked;
+        private bool infixHasError = false;
+        private Dictionary<string, string> decodeDictionary;
+        private Dictionary<string, string> encodeDictionary;
+        private Dictionary<int, string> arifmeticOpDictionary;
+        private System.Windows.Forms.Timer timer;
+        private int timerInterval = 1000;
 
         public MainForm()
-        {
+        {   
             InitializeComponent();
+            init();
+        }
+
+        private void init()
+        {
+            translator = new Translator();
+            outputPictureBox.Image = Image.FromFile(@"resources\output.jpg");
+            popPictureBox.Image = Image.FromFile(@"resources\pop.jpg");
+            pushPictureBox.Image = Image.FromFile(@"resources\push.jpg");
             stackPointerStartLoc = new Point(stackPointerLabel.Location.X, stackPointerLabel.Location.Y);
             actionTable = new RichTextBox[,]
             {
@@ -57,7 +75,13 @@ namespace ModLR1
                 {table7_0, table7_1,table7_2,table7_3,table7_4,table7_5,table7_6,table7_7,table7_8,table7_9},
             };
             translatorStack = translator.getStack();
+            decodeDictionary = translator.getFunctionDecodeDictionary();
+            encodeDictionary = translator.getFunctionEncodeDictionary();
             lastMarked = table0_0;
+            dY = 20;
+            timer = new System.Windows.Forms.Timer();
+            timer.Interval = 1000;
+            timer.Tick += new EventHandler(processOneTactTick);
         }
 
 
@@ -65,7 +89,9 @@ namespace ModLR1
         {
             string infixString = openInfixDialog();
             inputTextBox.Text = infixString;
+            interactiveInputTextBox.Text = infixString;
             translator.changeInfixSequence(inputTextBox.Text);
+            infixHasError = false;
             outputTextBox.Text = "";
             stackPointerLabel.Location = stackPointerStartLoc;
         }
@@ -93,88 +119,165 @@ namespace ModLR1
         {
             try
             {
+                outputTextBox.Text = "";
                 translator.changeInfixSequence(inputTextBox.Text);
-                outputTextBox.Text = translator.translateInfix();
+                interactiveInputTextBox.Text = inputTextBox.Text;
+                timer.Start();
             }
             catch (SyntaxValidationException exception)
             {
+                timer.Stop();
                 MessageBox.Show(exception.Message, "Ошибка обработки!", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
         private void tactButton_Click(object sender, EventArgs e)
         {
+            hideAll();
             unmarkTableElement(lastMarked);
-            if (translator.hasNext())
+            if (translator.hasNext() && !infixHasError)
             {
-                int beforeOperationCode = translator.nextInfixCode();
-                int operation = translator.currentOperation();
-                lastMarked = actionTable[translator.nextStackCode(), translator.nextInfixCode()];
-                markTableElement(lastMarked);
-                string operationResult = translator.processTranslatorOperation(operation);
-                int afterOperationCode = translator.nextInfixCode();
-                if (operation != Translator.OP_POP)
-                {
-                    try
-                    {
-                        translator.validateInfix(beforeOperationCode, afterOperationCode);
-                    }
-                    catch (SyntaxValidationException exception)
-                    {
-                        MessageBox.Show(exception.Message, "Ошибка обработки!", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                }
-                switch (operationResult)
-                {
-                    case Translator.OP_RES_ERR_OPEN:
-                        MessageBox.Show("Syntax error exception: there is no pair for closing parenthesis )!");
-                        break;
-                    case Translator.OP_RES_ERR_CLOSE:
-                        MessageBox.Show("Syntax error exception: there is no pair for open parenthesis (!");
-                        break;
-                    case Translator.OP_RES_ERR_FUNC:
-                        MessageBox.Show($"Syntax error exception: function parenthesis structure problem!\n" +
-                            $"func #1 = {translator.functionDecodeDictionary[translatorStack.Poll()]} func #2 = {translator.functionDecodeDictionary[translator.currentInfixSequenceEncoded[translator.infixPointer].ToString()]}");
-                        break;
-                    case Translator.OP_RES_PUSH:
-                        push();
-                        break;
-                    case Translator.OP_RES_DEL_PAR:
-                        del_par();
-                        break;
-                    case Translator.OP_RES_SUCCESS:
-                        break;
-                    default:
-                        {
-                            if (operation == Translator.OP_POP)
-                            {
-                                pop();
-                            }
-                            outputTextBox.Text += translator.decodePostfix(operationResult);
-                            break;
-                        }
-                }
+                processOneTact();
             }
             else
             {
-                MessageBox.Show("Success");
+                if (infixHasError)
+                {
+                    DialogResult res = MessageBox.Show("Невозможно продолжить обработку строки из-за возникновения ошибки во время обработки. Сбросить состояние транслятора?", "Ошибка", MessageBoxButtons.OKCancel, MessageBoxIcon.Error);
+                    if (res == DialogResult.OK)
+                    {
+                        infixHasError = false;
+                        stackPointerLabel.Location = stackPointerStartLoc;
+                        translator.changeInfixSequence(inputTextBox.Text);
+                        outputTextBox.Text = "";
+                    }
+                }
+                else
+                    MessageBox.Show("Обработка строки завершена успешно!", "Успех", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 
+        private void processOneTactTick(object sender, EventArgs e)
+        {
+            if (translator.hasNext() && !infixHasError) {
+                hideAll();
+                unmarkTableElement(lastMarked);
+                processOneTact();
+            }
+            else
+            {
+                timer.Stop();
+                if (infixHasError)
+                {
+                    MessageBox.Show("Невозможно продолжить обработку строки из-за возникновения ошибки во время обработки. Состояние транслятора будет сброшено.", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    infixHasError = false;
+                    stackPointerLabel.Location = stackPointerStartLoc;
+                    translator.changeInfixSequence(inputTextBox.Text);
+                    outputTextBox.Text = "";            
+                }
+                else
+                    MessageBox.Show("Обработка строки завершена успешно!", "Успех", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+
+        private void processOneTact()
+        {
+            int beforeOperationCode = translator.nextInfixCode();
+            int operation = translator.currentOperation();
+            lastMarked = actionTable[translator.nextStackCode(), translator.nextInfixCode()];
+            markTableElement(lastMarked);
+            string operationResult = translator.processTranslatorOperation(operation);
+            int afterOperationCode = translator.nextInfixCode();
+            if (operation != Translator.OP_POP)
+            {
+                try
+                {
+                    translator.validateInfix(beforeOperationCode, afterOperationCode);
+                }
+                catch (SyntaxValidationException exception)
+                {
+                    infixHasError = true;
+                    MessageBox.Show(exception.Message, "Ошибка обработки!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+            switch (operationResult)
+            {
+                case Translator.OP_RES_ERR_OPEN:
+                    {
+                        MessageBox.Show("Ошибка синтаксической валидации: нет пары для закрывающей скобки  )!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        infixHasError = true;
+                        break;
+                    }
+                case Translator.OP_RES_ERR_CLOSE:
+                    {
+                        MessageBox.Show("Ошибка синтаксической валидации: нет пары для открывающей скобки ( (!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        infixHasError = true;
+                        break;
+                    }
+                case Translator.OP_RES_ERR_FUNC:
+                    {
+                        MessageBox.Show($"Ошибка синтаксической валидации: ошибка в структуре скобок функции!\n" +
+                            $"функция #1 = {decodeDictionary[translatorStack.Poll()]} функция #2 = {decodeDictionary[translator.getCurrentInfixSequenceEncoded()[translator.getInfixPointer()].ToString()]}", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        infixHasError = true;
+                        break;
+                    }
+                case Translator.OP_RES_PUSH:
+                    push();
+                    break;
+                case Translator.OP_RES_DEL_PAR:
+                    del_par();
+                    break;
+                case Translator.OP_RES_SUCCESS:
+                    break;
+                default:
+                    {
+                        if (operation == Translator.OP_POP)
+                            pop();
+                        else
+                        {
+                            outputPictureBox.Show();
+                            takeFirstInfix();
+                        }
+                        outputTextBox.Text += translator.decodeFunctions(operationResult);
+                        break;
+                    }
+            }
+        }
+        private void hideAll()
+        {
+            popPictureBox.Hide();
+            pushPictureBox.Hide();
+            outputPictureBox.Hide();
+        }
         private void push()
         {
-            stackTextBox.Text = translator.decodePostfix(translatorStack.ToString());
+            pushPictureBox.Show();
+            takeFirstInfix();
+            stackTextBox.Text = translator.decodeFunctions(translatorStack.ToString());
             moveStackPointer(-dY);
+        }
+
+        private void takeFirstInfix()
+        {
+            string encoded = translator.encodeFunctions(interactiveInputTextBox.Text);
+            string cutted = encoded.Substring(1, encoded.Length - 1);
+            string decoded = translator.decodeFunctions(cutted);
+            interactiveInputTextBox.Text = decoded;
         }
 
         private void pop()
         {
+            popPictureBox.Show();
             moveStackPointer(dY);
         }
 
         private void del_par()
         {
-            pop();
+            moveStackPointer(dY);
+            string encoded = translator.encodeFunctions(interactiveInputTextBox.Text);
+            string cutted = encoded.Substring(1, encoded.Length - 1);
+            string decoded = translator.decodeFunctions(cutted);
+            interactiveInputTextBox.Text = decoded;
         }
 
         private void moveStackPointer(int dY)
@@ -182,6 +285,11 @@ namespace ModLR1
             stackPointerLabel.Location = new Point(stackPointerLabel.Location.X, stackPointerLabel.Location.Y + dY);
         }
 
-
+        private void timerIntervalTrackBar_Scroll(object sender, EventArgs e)
+        {
+            timerInterval = timerIntervalTrackBar.Value * 100;
+            timerIntervalLabel.Text = $"{timerInterval} милли секунд";
+            timer.Interval = timerInterval;
+        }
     }
 }

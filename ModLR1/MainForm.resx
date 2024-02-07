@@ -117,4 +117,14 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="label2.Text" xml:space="preserve">
+    <value>1. Поместить символ из входной строки в стек
+2. Извлечь символ из стека и отправить его в 
+    выходную строку 
+3. Удалить  ")" из входной строки и "(" из стека
+4. Успех
+5. Ошибка закрывающей скобки ")"
+6. Ошибка открывающей скобки "("
+7. Ошибка функции </value>
+  </data>
 </root>
