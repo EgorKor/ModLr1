@@ -11,9 +11,9 @@ namespace ModLR1
     public class Stack
     {
         private const int DEFAULT_CAPACITY = 10;
-        private int capacity;
-        private List<string> data;
-        private int stackPointer;
+        private int capacity;//емкость стека
+        private List<string> data;//данные стека в виде списка
+        private int stackPointer;//указатель на последний добавленный элемент
 
         public Stack()
         {
@@ -35,6 +35,7 @@ namespace ModLR1
             initData();
         }
 
+        //первоначальное заполнение стека
         private void initData()
         {
             for(int i = 0; i < capacity; i++)
@@ -43,6 +44,7 @@ namespace ModLR1
             }
         }
         
+        //затакливает элемент в стек
         public void Push(string s)
         {
             if(stackPointer == 0)
@@ -82,12 +84,13 @@ namespace ModLR1
             return data[stackPointer];
         }
 
+        //проверка стека на пустоту
         public bool isEmpty()
         {
             return stackPointer == capacity;
         }
         
-
+        //строчное представление данных стека
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();

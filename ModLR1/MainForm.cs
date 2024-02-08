@@ -92,16 +92,17 @@ namespace ModLR1
             isInputNotEmpty = updateInputInfix(infixString);
         }
 
+        //метод обновления входной инфиксной строки
         private bool updateInputInfix(string infixString)
         {
-            if (infixString.Trim() == "")
+            if (infixString == "")
             {
                 MessageBox.Show("Входная строка пуста! Введите не пустую строку!", "Ошибка ввода", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
             }
             inputTextBox.Text = infixString;
             interactiveInputTextBox.Text = infixString;
-            translator.changeInfixSequence(inputTextBox.Text);
+            translator.changeInfixSequence(infixString);
             infixHasError = false;
             outputTextBox.Text = "";
             stackPointerLabel.Location = stackPointerStartLoc;
@@ -109,18 +110,21 @@ namespace ModLR1
             return true;
         }
 
+        //выделяет элемент таблицы
         private void markTableElement(RichTextBox needToMark)
         {
             needToMark.BackColor = Color.Blue;
             needToMark.ForeColor = Color.White;
         }
 
+        //удаляет выделение элемента таблицы
         private void unmarkTableElement(RichTextBox needToUnmark)
         {
             needToUnmark.BackColor = Color.White;
             needToUnmark.ForeColor = Color.Black;
         }
 
+        //открывает форму ввода инфиксной строки
         public string openInfixDialog()
         {
             Form prompt = new InputInfixForm();
@@ -130,6 +134,7 @@ namespace ModLR1
             return castedPrompt.isCancel ? inputTextBox.Text : castedPrompt.infixTextBox.Text;
         }
 
+        //обработчик кнопки "Авто" - запускает автоматический режим на интерфейсе
         private void autoButton_Click(object sender, EventArgs e)
         {
             updateInputInfix(inputTextBox.Text);
@@ -139,6 +144,7 @@ namespace ModLR1
             }
         }
 
+        //обработчик кнопки "Такт" - запускает один такт на интерфейсе
         private void tactButton_Click(object sender, EventArgs e)
         {
             if (!isInputNotEmpty)
@@ -165,6 +171,7 @@ namespace ModLR1
             }
         }
 
+        //обрабатывает один тик таймера
         private void processOneTactTick(object sender, EventArgs e)
         {
             if (translator.hasNext() && !infixHasError) {
@@ -188,7 +195,7 @@ namespace ModLR1
 
 
         /*Обрабатывает один такт транслятора, если во время валидации символов обрабатываемых во время такта
-         возникло обработка не идёт дальше, предлагается сброс состояния транслятора*/
+         возникло исключение обработка не идёт дальше, предлагается сброс состояния транслятора*/
         private void processOneTact()
         {
             int beforeOperationCode = translator.nextInfixCode();
@@ -218,13 +225,13 @@ namespace ModLR1
                 case Translator.OP_RES_ERR_OPEN:
                     {
                         infixHasError = true;
-                        MessageBox.Show("Ошибка синтаксической валидации: нет пары для закрывающей скобки  )!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("Ошибка синтаксической валидации: нет пары для открывающей скобки!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         break;
                     }
                 case Translator.OP_RES_ERR_CLOSE:
                     {
                         infixHasError = true;
-                        MessageBox.Show("Ошибка синтаксической валидации: нет пары для открывающей скобки (!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("Ошибка синтаксической валидации: нет пары для закрывающей скобки!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         break;
                     }
                 case Translator.OP_RES_ERR_FUNC:

@@ -53,7 +53,7 @@ namespace ModLr1Tests
 
         [TestMethod]
         [ExpectedException(typeof(SyntaxValidationException),
-            "Oh my god, we can't divison on zero")]
+            "")]
         public void InfixTest7_SyntaxValidationException()
         {
             translator.changeInfixSequence("a+*d");
@@ -62,7 +62,7 @@ namespace ModLr1Tests
 
         [TestMethod]
         [ExpectedException(typeof(SyntaxValidationException),
-            "Oh my god, we can't divison on zero")]
+            "")]
         public void InfixTest8_SyntaxValidationException()
         {
             translator.changeInfixSequence("ad");

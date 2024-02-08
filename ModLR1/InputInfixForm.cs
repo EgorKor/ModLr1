@@ -5,6 +5,7 @@ using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -142,6 +143,11 @@ namespace ModLR1
 
         private void okButton_Click(object sender, EventArgs e)
         {
+            if (!Regex.IsMatch(infixTextBox.Text,".*[abcdef]+.*"))
+            {
+                MessageBox.Show("Отсутствует хотя бы один операнд","Ошибка",MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
             isCancel = false;
             Close();
         }

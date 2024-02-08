@@ -67,7 +67,7 @@ namespace ModLR1
         public const string OP_RES_ERR_FUNC = "ERROR_FUNC";
         public const string OP_RES_DEL_PAR = "DELPAR";
         public const string OP_RES_PUSH = "PUSH";
-        /*Константы арифметических операция*/
+        /*Константы арифметических операций и операндов*/
         /*Нужны для организации доступа к таблице принятия решений*/
         private const int ARF_EMPTY = 0;
         private const int ARF_PLUS = 1;
@@ -159,9 +159,9 @@ namespace ModLR1
                 switch (operationResult)
                 {
                     case OP_RES_ERR_OPEN:
-                        throw new SyntaxValidationException("Ошибка синтаксической валидации: нет пары для закрывающей скобки )!");
+                        throw new SyntaxValidationException("Ошибка синтаксической валидации: нет пары для открывающей скобки!");
                     case OP_RES_ERR_CLOSE:
-                        throw new SyntaxValidationException("Ошибка синтаксической валидации: нет пары для открывающей скобки (!");
+                        throw new SyntaxValidationException("Ошибка синтаксической валидации: нет пары для закрывающей скобки!");
                     case OP_RES_ERR_FUNC:
                         throw new SyntaxValidationException($"Ошибка синтаксической валидации: ошибка в структуре скобок функции!\n" +
                             $"фукнция #1 = {functionDecodeDictionary[stack.Poll()]} фукнция #2 = {functionDecodeDictionary[currentInfixSequenceEncoded[infixPointer].ToString()]}"); ;
@@ -184,6 +184,14 @@ namespace ModLR1
             /*Выражение Ошибка …A +* d… Подряд два символа операций 
              * …A d… Подряд две переменные 
              * …A (… Между переменной и скобкой отсутствует символ операции */
+            if ((firstCode == ARF_MINUS ||
+                firstCode == ARF_PLUS ||
+                firstCode == ARF_MULT ||
+                firstCode == ARF_POW ||
+                firstCode == ARF_DIV) && infixPointer == 1)
+            {
+                throw new SyntaxValidationException($"Ошибка синтаксической валидации: строка начинается с операции! операция = {currentInfixSequenceEncoded[infixPointer-1]}");
+            }
             if ((firstCode == ARF_MINUS ||
                 firstCode == ARF_PLUS   ||
                 firstCode == ARF_MULT   ||
@@ -318,6 +326,7 @@ namespace ModLR1
                     };
             }
         }
+
         //Возвращает true если есть символы которые нужно обработать в
         //инфиксной последовательности или в стэке
         public bool hasNext()
