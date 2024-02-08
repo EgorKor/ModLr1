@@ -49,6 +49,7 @@ namespace ModLR1
         private Dictionary<int, string> arifmeticOpDictionary;
         private System.Windows.Forms.Timer timer;
         private int timerInterval = 1000;
+        private bool isInputNotEmpty = false;
 
         public MainForm()
         {   
@@ -88,12 +89,24 @@ namespace ModLR1
         private void inputInfixButton_Click(object sender, EventArgs e)
         {
             string infixString = openInfixDialog();
+            isInputNotEmpty = updateInputInfix(infixString);
+        }
+
+        private bool updateInputInfix(string infixString)
+        {
+            if (infixString.Trim() == "")
+            {
+                MessageBox.Show("Входная строка пуста! Введите не пустую строку!", "Ошибка ввода", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
             inputTextBox.Text = infixString;
             interactiveInputTextBox.Text = infixString;
             translator.changeInfixSequence(inputTextBox.Text);
             infixHasError = false;
             outputTextBox.Text = "";
             stackPointerLabel.Location = stackPointerStartLoc;
+            hideAll();
+            return true;
         }
 
         private void markTableElement(RichTextBox needToMark)
@@ -111,28 +124,28 @@ namespace ModLR1
         public string openInfixDialog()
         {
             Form prompt = new InputInfixForm();
+            InputInfixForm castedPrompt = (InputInfixForm)prompt;
+            castedPrompt.infixTextBox.Text = inputTextBox.Text;
             prompt.ShowDialog();
-            return ((InputInfixForm)prompt).infixTextBox.Text;
+            return castedPrompt.isCancel ? inputTextBox.Text : castedPrompt.infixTextBox.Text;
         }
 
         private void autoButton_Click(object sender, EventArgs e)
         {
-            try
-            {
-                outputTextBox.Text = "";
-                translator.changeInfixSequence(inputTextBox.Text);
-                interactiveInputTextBox.Text = inputTextBox.Text;
+            updateInputInfix(inputTextBox.Text);
+            if (isInputNotEmpty)
+            { 
                 timer.Start();
-            }
-            catch (SyntaxValidationException exception)
-            {
-                timer.Stop();
-                MessageBox.Show(exception.Message, "Ошибка обработки!", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
         private void tactButton_Click(object sender, EventArgs e)
         {
+            if (!isInputNotEmpty)
+            {
+                MessageBox.Show("Входная строка пуста! Введите не пустую строку!", "Ошибка ввода", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
             hideAll();
             unmarkTableElement(lastMarked);
             if (translator.hasNext() && !infixHasError)
@@ -145,12 +158,7 @@ namespace ModLR1
                 {
                     DialogResult res = MessageBox.Show("Невозможно продолжить обработку строки из-за возникновения ошибки во время обработки. Сбросить состояние транслятора?", "Ошибка", MessageBoxButtons.OKCancel, MessageBoxIcon.Error);
                     if (res == DialogResult.OK)
-                    {
-                        infixHasError = false;
-                        stackPointerLabel.Location = stackPointerStartLoc;
-                        translator.changeInfixSequence(inputTextBox.Text);
-                        outputTextBox.Text = "";
-                    }
+                        updateInputInfix(inputTextBox.Text);
                 }
                 else
                     MessageBox.Show("Обработка строки завершена успешно!", "Успех", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -167,19 +175,20 @@ namespace ModLR1
             else
             {
                 timer.Stop();
-                if (infixHasError)
+                if(!infixHasError)
                 {
-                    MessageBox.Show("Невозможно продолжить обработку строки из-за возникновения ошибки во время обработки. Состояние транслятора будет сброшено.", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    infixHasError = false;
-                    stackPointerLabel.Location = stackPointerStartLoc;
-                    translator.changeInfixSequence(inputTextBox.Text);
-                    outputTextBox.Text = "";            
+                    DialogResult res = MessageBox.Show("Обработка строки завершена успешно!\nСбросить состояние транслятора?", "Успех", MessageBoxButtons.OKCancel, MessageBoxIcon.Information);
+                    if(res == DialogResult.OK)
+                    {
+                        updateInputInfix(inputTextBox.Text);
+                    }
                 }
-                else
-                    MessageBox.Show("Обработка строки завершена успешно!", "Успех", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 
+
+        /*Обрабатывает один такт транслятора, если во время валидации символов обрабатываемых во время такта
+         возникло обработка не идёт дальше, предлагается сброс состояния транслятора*/
         private void processOneTact()
         {
             int beforeOperationCode = translator.nextInfixCode();
@@ -197,38 +206,48 @@ namespace ModLR1
                 catch (SyntaxValidationException exception)
                 {
                     infixHasError = true;
-                    MessageBox.Show(exception.Message, "Ошибка обработки!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    DialogResult res = MessageBox.Show(exception.Message + "\nСбросить состояние транслятора?", "Ошибка обработки!", MessageBoxButtons.OKCancel, MessageBoxIcon.Error);
+                    unmarkTableElement(lastMarked);
+                    if (res == DialogResult.OK)
+                        updateInputInfix(inputTextBox.Text);
+                    return;
                 }
             }
             switch (operationResult)
             {
                 case Translator.OP_RES_ERR_OPEN:
                     {
-                        MessageBox.Show("Ошибка синтаксической валидации: нет пары для закрывающей скобки  )!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         infixHasError = true;
+                        MessageBox.Show("Ошибка синтаксической валидации: нет пары для закрывающей скобки  )!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         break;
                     }
                 case Translator.OP_RES_ERR_CLOSE:
                     {
-                        MessageBox.Show("Ошибка синтаксической валидации: нет пары для открывающей скобки ( (!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         infixHasError = true;
+                        MessageBox.Show("Ошибка синтаксической валидации: нет пары для открывающей скобки (!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         break;
                     }
                 case Translator.OP_RES_ERR_FUNC:
                     {
+                        infixHasError = true;
                         MessageBox.Show($"Ошибка синтаксической валидации: ошибка в структуре скобок функции!\n" +
                             $"функция #1 = {decodeDictionary[translatorStack.Poll()]} функция #2 = {decodeDictionary[translator.getCurrentInfixSequenceEncoded()[translator.getInfixPointer()].ToString()]}", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        infixHasError = true;
                         break;
                     }
                 case Translator.OP_RES_PUSH:
-                    push();
-                    break;
+                    {
+                        push();
+                        break;
+                    }
                 case Translator.OP_RES_DEL_PAR:
-                    del_par();
-                    break;
+                    {
+                        delPar();
+                        break;
+                    }
                 case Translator.OP_RES_SUCCESS:
-                    break;
+                    {
+                        break;
+                    }
                 default:
                     {
                         if (operation == Translator.OP_POP)
@@ -236,7 +255,7 @@ namespace ModLR1
                         else
                         {
                             outputPictureBox.Show();
-                            takeFirstInfix();
+                            removeFirstInfixSymbol();
                         }
                         outputTextBox.Text += translator.decodeFunctions(operationResult);
                         break;
@@ -249,15 +268,17 @@ namespace ModLR1
             pushPictureBox.Hide();
             outputPictureBox.Hide();
         }
+        //заталкивает символ из входной строки в стек (визуально)
         private void push()
         {
             pushPictureBox.Show();
-            takeFirstInfix();
+            removeFirstInfixSymbol();
             stackTextBox.Text = translator.decodeFunctions(translatorStack.ToString());
             moveStackPointer(-dY);
         }
-
-        private void takeFirstInfix()
+        
+        //удаляет первый символ из входной строки 
+        private void removeFirstInfixSymbol()
         {
             string encoded = translator.encodeFunctions(interactiveInputTextBox.Text);
             string cutted = encoded.Substring(1, encoded.Length - 1);
@@ -265,13 +286,14 @@ namespace ModLR1
             interactiveInputTextBox.Text = decoded;
         }
 
+
         private void pop()
         {
             popPictureBox.Show();
             moveStackPointer(dY);
         }
 
-        private void del_par()
+        private void delPar()
         {
             moveStackPointer(dY);
             string encoded = translator.encodeFunctions(interactiveInputTextBox.Text);

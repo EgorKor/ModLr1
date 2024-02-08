@@ -190,9 +190,9 @@ namespace ModLR1
                 firstCode == ARF_POW    ||
                 firstCode == ARF_DIV)   &&
                 (secondCode == ARF_MINUS ||
-                secondCode == ARF_PLUS ||
-                secondCode == ARF_MULT ||
-                secondCode == ARF_POW   ||
+                secondCode == ARF_PLUS   ||
+                secondCode == ARF_MULT   ||
+                secondCode == ARF_POW    ||
                 secondCode == ARF_DIV))
             {
                 throw new SyntaxValidationException($"Ошибка синтаксической валидации: подряд две операции!\nоперация #1 = {arfCodeDictionary[firstCode]} операция #2 = {arfCodeDictionary[secondCode]}");
@@ -207,7 +207,16 @@ namespace ModLR1
             }
             if(firstCode == ARF_FUNCTION  && secondCode != ARF_OPEN_PAR)
             {
-                throw new SyntaxValidationException($"Ошибка синтаксической валидации: отсутствует открывающая скобка после функции!\nфукция = {functionDecodeDictionary[currentInfixSequenceEncoded[infixPointer - 1].ToString()]}");
+                throw new SyntaxValidationException($"Ошибка синтаксической валидации: отсутствует открывающая скобка после функции!\nфукция = {functionDecodeDictionary[currentInfixSequenceEncoded[infixPointer].ToString()]}");
+            }
+            if (firstCode == ARF_OPEN_PAR &&
+                (secondCode == ARF_MINUS ||
+                 secondCode == ARF_PLUS  ||
+                 secondCode == ARF_MULT  ||
+                 secondCode == ARF_POW   ||
+                 secondCode == ARF_DIV))
+            {
+                throw new SyntaxValidationException($"Ошибка синтаксической валидации: после открывающей скобки следует знак операции!\nоперация = {arfCodeDictionary[secondCode]}");
             }
         }
 
@@ -305,7 +314,7 @@ namespace ModLR1
                     {
                         if (Regex.IsMatch(stack.Poll(), "[а-яА-Я]"))
                             return ARF_FUNCTION;
-                        throw new Exception("Illegal argument exception: unsupported symbol in Translator!");
+                        throw new Exception($"Ошибка аргумента: недопустимый символ в стеке транслятора! символ = {stack.Poll()}");
                     };
             }
         }
