@@ -26,29 +26,31 @@ namespace ModLR1
 
     public class Translator
     {
-        private Stack stack = new Stack();  //Стэк
+        private Stack<string> stack = new Stack<string>();  //Стэк
         private string currentInfixSequence;//Текущее инфиксное выражение
         private string currentInfixSequenceEncoded;//Текущее инфиксное выражение после кодирования
         private int infixPointer = 0;       //Указатель на обрабатываемый символ
 
         //словарь кодирования функций инфикскной строки
-        private Dictionary<string, string> funcionEncodeDictionary = new Dictionary<string, string>()
+        private static Dictionary<string, string> funcionEncodeDictionary = new Dictionary<string, string>()
         {
             {"sin","в"},
             {"cos","г"},
-            {"ln","и"}
+            {"ln","и"},
+            {"tg","т"}
         };
 
         //словарь декодирования функций постфиксной строки
-        private Dictionary<string, string> functionDecodeDictionary = new Dictionary<string, string>()
+        private static Dictionary<string, string> functionDecodeDictionary = new Dictionary<string, string>()
         {
             {"в","sin"},
             {"г","cos"},
-            {"и","ln"}
+            {"и","ln"},
+            {"т","tg"}
         };
 
         //словарь кодов символов и самих символов
-        private Dictionary<int, string> arfCodeDictionary = new Dictionary<int, string>()
+        private static Dictionary<int, string> arfCodeDictionary = new Dictionary<int, string>()
         {
             {ARF_EMPTY, ""},
             {ARF_DIV,"/"},
@@ -102,16 +104,16 @@ namespace ModLR1
                 /* F */{OP_POP     ,OP_POP ,OP_POP ,OP_POP ,OP_POP ,OP_POP ,OP_PUSH,OP_ERR_FUNC ,OP_POP      ,OP_OUTPUT}
             };
 
-        public Translator(){ changeInfixSequence(""); }
+        public Translator(){ changeInfixExpression(""); }
         public Translator(string infixSequence)
         {
-            changeInfixSequence(infixSequence);
+            changeInfixExpression(infixSequence);
         }
 
         
 
         //Метод меняющий обрабатываемую строку транслятором
-        public void changeInfixSequence(string newInfixSequence)
+        public void changeInfixExpression(string newInfixSequence)
         {
             clearStackAndInfixPointer();
             currentInfixSequence = newInfixSequence;
@@ -119,9 +121,9 @@ namespace ModLR1
         }
 
         //Метод кодирования алгебраического выражения
-        public string encodeFunctions(string infix)
+        public static string encodeFunctions(string needToEncode)
         {
-            string encoded = infix;
+            string encoded = needToEncode;
             foreach (KeyValuePair<string, string> entry in funcionEncodeDictionary)
             {
                 encoded = encoded.Replace(entry.Key, entry.Value);
@@ -130,9 +132,9 @@ namespace ModLR1
         }
 
         //Метод декодирования алгебраического выражения
-        public string decodeFunctions(string postfix)
+        public static string decodeFunctions(string needToDecode)
         {
-            string decoded = postfix;
+            string decoded = needToDecode;
             foreach (KeyValuePair<string, string> entry in functionDecodeDictionary)
             {
                 decoded = decoded.Replace(entry.Key, entry.Value);
@@ -340,22 +342,22 @@ namespace ModLR1
             stack.Clear();
         }
 
-        public Stack getStack()
+        public Stack<string> getStack()
         {
             return stack;
         }
 
-        public Dictionary<int, string> getArfCodeDictionary()
+        public static Dictionary<int, string> getArfCodeDictionary()
         {
             return new Dictionary<int, string>(arfCodeDictionary);
         }
 
-        public Dictionary<string, string> getFunctionEncodeDictionary()
+        public static Dictionary<string, string> getFunctionEncodeDictionary()
         {
             return new Dictionary<string, string>(funcionEncodeDictionary);
         }
 
-        public Dictionary<string, string> getFunctionDecodeDictionary()
+        public static Dictionary<string, string> getFunctionDecodeDictionary()
         {
             return new Dictionary<string, string>(functionDecodeDictionary);
         }

@@ -8,19 +8,17 @@ using System.Threading.Tasks;
 
 namespace ModLR1
 {
-    public class Stack
+    public class Stack<T>
     {
         private const int DEFAULT_CAPACITY = 10;
         private int capacity;//емкость стека
-        private List<string> data;//данные стека в виде списка
-        private int stackPointer;//указатель на последний добавленный элемент
+        private T[] data;//данные стека в виде списка
+        private int stackPointer = -1;//указатель на последний добавленный элемент
 
         public Stack()
         {
             capacity = DEFAULT_CAPACITY;
-            data = new List<string>(capacity);
-            stackPointer = capacity;
-            initData();
+            data = new T[capacity];
         }
 
         public Stack(int capacity)
@@ -30,72 +28,68 @@ namespace ModLR1
                 throw new Exception("Illegal argument exception: Capacity should be greater than zero!");
             }
             this.capacity = capacity;
-            data = new List<string>(this.capacity);
-            stackPointer = capacity;
-            initData();
+            data = new T[this.capacity];;
         }
 
-        //первоначальное заполнение стека
-        private void initData()
-        {
-            for(int i = 0; i < capacity; i++)
-            {
-                data.Add("");
-            }
-        }
-        
         //затакливает элемент в стек
-        public void Push(string s)
+        public void Push(T elem)
         {
-            if(stackPointer == 0)
+            if (stackPointer == capacity - 1)
             {
-                throw new Exception("Illegal action exception: Stack is overflow!");
+                extend();
             }
-            stackPointer--;
-            data[stackPointer] = s;
+            stackPointer++;
+            data[stackPointer] = elem;
+        }
+
+        private void extend()
+        {
+            capacity = capacity * 2;
+            T[] newData = new T[capacity];
+            for(int i = 0; i < capacity / 2; i++)
+            {
+                newData[i] = data[i];
+            }
+            data = newData;
         }
 
 
         //Достаёт верхний элемент стэка и перемещает указатель стэка вниз
-        public string Pop()
+        public T Pop()
         {
-            if(stackPointer == capacity)
+            if(stackPointer == -1)
             {
-                throw new Exception("Illegal action exception: Stack is empty!");
+                throw new Exception("Попытка достать элемент из пустого стека!");
             }
-            string popedString = data[stackPointer];
-            stackPointer++;
-            return popedString;
+            T popedElem = data[stackPointer];
+            stackPointer--;
+            return popedElem;
         }
 
         //Очищает стэк - перемещает указатель стэка на дно
         public void Clear()
         {
-            stackPointer = capacity;
+            stackPointer = -1;
         }
 
         //Читает верхний элемент стэка, но не перемещает указатель стэка
-        public string Poll()
+        public T Poll()
         {
-            if (stackPointer == capacity)
-            {
-                throw new Exception("Illegal action exception: Stack is empty!");
-            }
             return data[stackPointer];
         }
 
         //проверка стека на пустоту
         public bool isEmpty()
         {
-            return stackPointer == capacity;
+            return stackPointer == -1;
         }
         
         //строчное представление данных стека
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            for(int i = 0; i < capacity - 1; i++) { 
-                sb.Append(data[i] == "" ? "0x00": data[i]).Append("\n");
+            for(int i = capacity - 1; i >= 0; i++) { 
+                sb.Append(data[i].ToString() == "" ? "$": data[i].ToString()).Append("\n");
             }
             sb.Append(data[capacity - 1]);
             return sb.ToString();

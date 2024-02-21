@@ -11,28 +11,28 @@ namespace ModLr1Tests
         [TestMethod]
         public void InfixTest1()
         {
-            translator.changeInfixSequence("a+b");
+            translator.changeInfixExpression("a+b");
             Assert.AreEqual("ab+", translator.translateInfix());
         }
 
         [TestMethod]
         public void InfixTest2()
         {
-            translator.changeInfixSequence("a-b");
+            translator.changeInfixExpression("a-b");
             Assert.AreEqual("ab-", translator.translateInfix());
         }
 
         [TestMethod]
         public void InfixTest3()
         {
-            translator.changeInfixSequence("a*b");
+            translator.changeInfixExpression("a*b");
             Assert.AreEqual("ab*", translator.translateInfix());
         }
 
         [TestMethod]
         public void InfixTest4()
         {
-            translator.changeInfixSequence("a/b");
+            translator.changeInfixExpression("a/b");
             Assert.AreEqual("ab/", translator.translateInfix());
         }
 
@@ -40,14 +40,14 @@ namespace ModLr1Tests
         [TestMethod]
         public void InfixTest5()
         {
-            translator.changeInfixSequence("sin((a+b)+c)");
+            translator.changeInfixExpression("sin((a+b)+c)");
             Assert.AreEqual("ab+c+sin", translator.translateInfix());
         }
 
         [TestMethod]
         public void InfixTest6()
         {
-            translator.changeInfixSequence("(a-b*c^(k/d))*(c-b)");
+            translator.changeInfixExpression("(a-b*c^(k/d))*(c-b)");
             Assert.AreEqual("abckd/^*-cb-*", translator.translateInfix());
         }
 
@@ -56,7 +56,7 @@ namespace ModLr1Tests
             "")]
         public void InfixTest7_SyntaxValidationException()
         {
-            translator.changeInfixSequence("a+*d");
+            translator.changeInfixExpression("a+*d");
             translator.translateInfix();
         }
 
@@ -65,7 +65,7 @@ namespace ModLr1Tests
             "")]
         public void InfixTest8_SyntaxValidationException()
         {
-            translator.changeInfixSequence("ad");
+            translator.changeInfixExpression("ad");
             translator.translateInfix();
         }
 
@@ -74,7 +74,7 @@ namespace ModLr1Tests
             "Oh my god, we can't divison on zero")]
         public void InfixTest9_SyntaxValidationException()
         {
-            translator.changeInfixSequence("a(");
+            translator.changeInfixExpression("a(");
             translator.translateInfix();
         }
 
@@ -83,7 +83,7 @@ namespace ModLr1Tests
             "Oh my god, we can't divison on zero")]
         public void InfixTest10_SyntaxValidationException()
         {
-            translator.changeInfixSequence(")(");
+            translator.changeInfixExpression(")(");
             translator.translateInfix();
         }
 
@@ -92,14 +92,14 @@ namespace ModLr1Tests
             "Oh my god, we can't divison on zero")]
         public void InfixTest11_SyntaxValidationException()
         {
-            translator.changeInfixSequence("sincos");
+            translator.changeInfixExpression("sincos");
             translator.translateInfix();
         }
 
         [TestMethod]
         public void InfixTest12()
         {
-            translator.changeInfixSequence("a*sin(b)");
+            translator.changeInfixExpression("a*sin(b)");
             Assert.AreEqual("absin*", translator.translateInfix());
         }
 

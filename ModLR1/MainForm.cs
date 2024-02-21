@@ -38,7 +38,7 @@ namespace ModLR1
     {
 
         private Translator translator;
-        private Stack translatorStack;
+        private Stack<string> translatorStack;
         private Point stackPointerStartLoc;
         private int dY;
         private RichTextBox[,] actionTable;
@@ -76,8 +76,8 @@ namespace ModLR1
                 {table7_0, table7_1,table7_2,table7_3,table7_4,table7_5,table7_6,table7_7,table7_8,table7_9},
             };
             translatorStack = translator.getStack();
-            decodeDictionary = translator.getFunctionDecodeDictionary();
-            encodeDictionary = translator.getFunctionEncodeDictionary();
+            decodeDictionary = Translator.getFunctionDecodeDictionary();
+            encodeDictionary = Translator.getFunctionEncodeDictionary();
             lastMarked = table0_0;
             dY = 20;
             timer = new System.Windows.Forms.Timer();
@@ -102,7 +102,7 @@ namespace ModLR1
             }
             inputTextBox.Text = infixString;
             interactiveInputTextBox.Text = infixString;
-            translator.changeInfixSequence(infixString);
+            translator.changeInfixExpression(infixString);
             infixHasError = false;
             outputTextBox.Text = "";
             stackPointerLabel.Location = stackPointerStartLoc;
@@ -264,7 +264,7 @@ namespace ModLR1
                             outputPictureBox.Show();
                             removeFirstInfixSymbol();
                         }
-                        outputTextBox.Text += translator.decodeFunctions(operationResult);
+                        outputTextBox.Text += Translator.decodeFunctions(operationResult);
                         break;
                     }
             }
@@ -280,16 +280,16 @@ namespace ModLR1
         {
             pushPictureBox.Show();
             removeFirstInfixSymbol();
-            stackTextBox.Text = translator.decodeFunctions(translatorStack.ToString());
+            stackTextBox.Text = Translator.decodeFunctions(translatorStack.ToString());
             moveStackPointer(-dY);
         }
         
         //удаляет первый символ из входной строки 
         private void removeFirstInfixSymbol()
         {
-            string encoded = translator.encodeFunctions(interactiveInputTextBox.Text);
+            string encoded = Translator.encodeFunctions(interactiveInputTextBox.Text);
             string cutted = encoded.Substring(1, encoded.Length - 1);
-            string decoded = translator.decodeFunctions(cutted);
+            string decoded = Translator.decodeFunctions(cutted);
             interactiveInputTextBox.Text = decoded;
         }
 
@@ -303,9 +303,9 @@ namespace ModLR1
         private void delPar()
         {
             moveStackPointer(dY);
-            string encoded = translator.encodeFunctions(interactiveInputTextBox.Text);
+            string encoded = Translator.encodeFunctions(interactiveInputTextBox.Text);
             string cutted = encoded.Substring(1, encoded.Length - 1);
-            string decoded = translator.decodeFunctions(cutted);
+            string decoded = Translator.decodeFunctions(cutted);
             interactiveInputTextBox.Text = decoded;
         }
 
