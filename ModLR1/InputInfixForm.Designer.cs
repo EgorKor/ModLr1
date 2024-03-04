@@ -50,12 +50,14 @@
             this.infixTextBox = new System.Windows.Forms.RichTextBox();
             this.okButton = new System.Windows.Forms.Button();
             this.button1 = new System.Windows.Forms.Button();
+            this.tgButton = new System.Windows.Forms.Button();
             this.panel1.SuspendLayout();
             this.SuspendLayout();
             // 
             // panel1
             // 
             this.panel1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.panel1.Controls.Add(this.tgButton);
             this.panel1.Controls.Add(this.cosButton);
             this.panel1.Controls.Add(this.clearButton);
             this.panel1.Controls.Add(this.lnButton);
@@ -310,6 +312,17 @@
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
+            // tgButton
+            // 
+            this.tgButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.tgButton.Location = new System.Drawing.Point(212, 204);
+            this.tgButton.Name = "tgButton";
+            this.tgButton.Size = new System.Drawing.Size(53, 35);
+            this.tgButton.TabIndex = 10;
+            this.tgButton.Text = "tg";
+            this.tgButton.UseVisualStyleBackColor = true;
+            this.tgButton.Click += new System.EventHandler(this.tgButton_Click);
+            // 
             // InputInfixForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -352,5 +365,6 @@
         public System.Windows.Forms.RichTextBox infixTextBox;
         private System.Windows.Forms.Button okButton;
         private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Button tgButton;
     }
 }

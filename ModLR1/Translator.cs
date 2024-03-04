@@ -30,6 +30,8 @@ namespace ModLR1
         private string currentInfixSequence;//Текущее инфиксное выражение
         private string currentInfixSequenceEncoded;//Текущее инфиксное выражение после кодирования
         private int infixPointer = 0;       //Указатель на обрабатываемый символ
+        private string defaultOperators = " +-*/^( )";
+        
 
         //словарь кодирования функций инфикскной строки
         private static Dictionary<string, string> funcionEncodeDictionary = new Dictionary<string, string>()
@@ -217,7 +219,7 @@ namespace ModLR1
             }
             if(firstCode == ARF_FUNCTION  && secondCode != ARF_OPEN_PAR)
             {
-                throw new SyntaxValidationException($"Ошибка синтаксической валидации: отсутствует открывающая скобка после функции!\nфукция = {functionDecodeDictionary[currentInfixSequenceEncoded[infixPointer].ToString()]}");
+                throw new SyntaxValidationException($"Ошибка синтаксической валидации: отсутствует открывающая скобка после функции!\nфукция = {functionDecodeDictionary[currentInfixSequenceEncoded[infixPointer - 1].ToString()]}");
             }
             if (firstCode == ARF_OPEN_PAR &&
                 (secondCode == ARF_MINUS ||
@@ -275,58 +277,28 @@ namespace ModLR1
         {
             if (infixPointer == currentInfixSequenceEncoded.Length)
                 return ARF_EMPTY;
-            switch (currentInfixSequenceEncoded[infixPointer].ToString())
+            int index = defaultOperators.IndexOf(currentInfixSequenceEncoded[infixPointer].ToString());
+            if (index != -1)
             {
-                case "+":
-                    return ARF_PLUS;
-                case "-":
-                    return ARF_MINUS;
-                case "*":
-                    return ARF_MULT;
-                case "/":
-                    return ARF_DIV;
-                case "(":
-                    return ARF_OPEN_PAR;
-                case ")":
-                    return ARF_CLOSE_PAR;
-                case "^":
-                    return ARF_POW;
-                default:
-                    {
-                        if (Regex.IsMatch(currentInfixSequenceEncoded[infixPointer].ToString(),"[а-яА-Я]"))
-                            return ARF_FUNCTION;
-                        return ARF_VARIABLE;
-                    }
+                return index;
             }
+            if (Regex.IsMatch(currentInfixSequenceEncoded[infixPointer].ToString(), "[а-яА-Я]"))
+                return ARF_FUNCTION;
+            return ARF_VARIABLE;
         }
         //Читает и возвращает верхний элемент стэка
         public int nextStackCode()
         {
             if (stack.isEmpty())
                 return ARF_EMPTY;
-            switch (stack.Poll())
+            int index = defaultOperators.IndexOf(stack.Poll());
+            if (index != -1)
             {
-                case "+":
-                    return ARF_PLUS;
-                case "-":
-                    return ARF_MINUS;
-                case "*":
-                    return ARF_MULT;
-                case "/":
-                    return ARF_DIV;
-                case "(":
-                    return ARF_OPEN_PAR;
-                case ")":
-                    return ARF_CLOSE_PAR;
-                case "^":
-                    return ARF_POW;
-                default:
-                    {
-                        if (Regex.IsMatch(stack.Poll(), "[а-яА-Я]"))
-                            return ARF_FUNCTION;
-                        throw new Exception($"Ошибка аргумента: недопустимый символ в стеке транслятора! символ = {stack.Poll()}");
-                    };
+                return index;
             }
+            if (Regex.IsMatch(stack.Poll(), "[а-яА-Я]"))
+                return ARF_FUNCTION;
+            throw new Exception($"Ошибка аргумента: недопустимый символ в стеке транслятора! символ = {stack.Poll()}");
         }
 
         //Возвращает true если есть символы которые нужно обработать в

@@ -65,7 +65,7 @@ namespace PostfixCalculatorUnitTests
                     {"a",-1},
                     {"b",Math.PI},
                 });
-            double val = postfixCalculator.getPostfixValue();
+            postfixCalculator.getPostfixValue();
         }
 
         [TestMethod]
@@ -78,7 +78,7 @@ namespace PostfixCalculatorUnitTests
                 {
                     {"a",Math.PI/2},
                 });
-            double val = postfixCalculator.getPostfixValue();
+            postfixCalculator.getPostfixValue();
         }
 
         [TestMethod]
@@ -91,7 +91,7 @@ namespace PostfixCalculatorUnitTests
                 {
                     {"a",-3},
                 });
-            double val = postfixCalculator.getPostfixValue();
+            postfixCalculator.getPostfixValue();
         }
 
     }

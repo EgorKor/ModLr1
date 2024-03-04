@@ -20,10 +20,10 @@ namespace ModLR1
         private Dictionary<string, UnaryFunc> functionsDictionary =
             new Dictionary<string, UnaryFunc>()
             {
-                {"sin", x => Math.Round(Math.Sin(x),3)},
-                {"cos", x => Math.Round(Math.Cos(x),3)},
+                {"sin", x => Math.Round(Math.Sin(x),9)},
+                {"cos", x => Math.Round(Math.Cos(x),9)},
                 {"ln", x => {
-                    if (x < 0)
+                    if (x <= 0)
                     {
                         throw new Exception("Ошибка аргумента: аргумент логирифма не может быть отрицательным");
                     }
@@ -31,7 +31,7 @@ namespace ModLR1
                     }
                 },
                 {"tg", x =>{
-                    if(Math.Round(Math.Cos(x),3) == 0){
+                    if(Math.Round(Math.Cos(x),9) == 0){
                         throw new Exception("Ошибка аргумента: в тангенсе не может быть аргумента, который даёт косинус равный нулю");
                     }
                     return Math.Tan(x);
@@ -44,22 +44,30 @@ namespace ModLR1
                 {"*", (x,y) => y * x},
                 {"+", (x,y) => y + x},
                 {"-", (x,y) => y - x},
-                {"/", (x,y) => y / x},
+                {"/", (x,y) => {
+                    if(x == 0){
+                        throw new Exception("Ошибка аргумента: нельзя делить на 0");
+                    }
+                    return y / x;
+                }},
                 {"^", (x,y) => {
-                    if(y < 0){
-                        throw new Exception("Ошибка аргумента: у степенной функции не может быть отрицательного основания");
-                    }return Math.Pow(y,x); }
-                }
+                    if(y <= 0){
+                        throw new Exception("Ошибка аргумента: у степенной функции не может быть отрицательного или нулевого основания ");
+                    }
+                    return Math.Pow(y,x); 
+                }}
             };
         
 
         private string defaultOperators = "-+*/^";
+        public const string PUSH_VAR = "PUSH_VAR";
+        public const string PUSH_CALC_UNARY = "PUSH_CALC_UNARY";
+        public const string PUSH_CALC_BINARY = "PUSH_CALC_BINARY";
 
 
         public PostfixCalculator()
         {
             stack = new Stack<double>();
-            new List<string>(functionsDictionary.Keys).Min(x => x);
         }
 
 
@@ -71,8 +79,13 @@ namespace ModLR1
             postfixEncoded = Translator.encodeFunctions(postfix);
             postfixPointer = 0;
             stack.Clear();
+            validateVariables();
         }
 
+
+
+
+        //Метод который проверяет имеется ли для всех переменных значения
         private void validateVariables()
         {
             HashSet<string> variables = new HashSet<string>();
@@ -98,6 +111,8 @@ namespace ModLR1
             }
         }
 
+
+        //Метод который моделирует вычисление и возвращает результат вычислений
         public double getPostfixValue()
         {
             while (hasNext()) {
@@ -106,12 +121,14 @@ namespace ModLR1
             return stack.Pop();
         }
 
+        //Метод выполняющий операцию над текущим символом
         public string doOperation(string current)
         {
             if (Regex.IsMatch(current, "[a-zA-Z]"))
             {
                 stack.Push(varValuesDictionary[current]);
-                return "PUSH_VAR";
+                postfixPointer++;
+                return PUSH_VAR;
             }
             else
             {
@@ -121,12 +138,14 @@ namespace ModLR1
                     val1 = stack.Pop();
                     val2 = stack.Pop();
                     stack.Push(defaultFunctionsDictionary[current](val1, val2));
-                    return "PUSH_CALC_BINARY";
+                    postfixPointer++;
+                    return PUSH_CALC_BINARY;
                 }
                 else
                 {
+                    postfixPointer++;
                     stack.Push(functionsDictionary[Translator.decodeFunctions(current)](stack.Pop()));
-                    return "PUSH_CALC_UNARY";
+                    return PUSH_CALC_UNARY;
                 }   
             }   
         }
@@ -139,10 +158,23 @@ namespace ModLR1
 
         public string getNext()
         {
-            return postfixEncoded[postfixPointer++].ToString();
+            return postfixEncoded[postfixPointer].ToString();
         }
 
+        public Stack<double> getStack()
+        {
+            return stack;
+        }
 
+        public int getPostfixPointer()
+        {
+            return postfixPointer;
+        }
+
+        public string getPostfixEncoded()
+        {
+            return postfixEncoded;
+        }
 
     }
 }

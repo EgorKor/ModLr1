@@ -88,10 +88,10 @@ namespace ModLR1
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            for(int i = capacity - 1; i >= 0; i++) { 
-                sb.Append(data[i].ToString() == "" ? "$": data[i].ToString()).Append("\n");
+            for(int i = capacity - 1; i > 0; i--) { 
+                sb.Append(data[i] == null ? "null": data[i].ToString()).Append("\n");
             }
-            sb.Append(data[capacity - 1]);
+            sb.Append(data[0]);
             return sb.ToString();
         }
     }

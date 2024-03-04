@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -39,6 +40,8 @@ namespace ModLR1
 
         private Translator translator;
         private Stack<string> translatorStack;
+        private PostfixCalculator postfixCalculator;
+        private Stack<double> calcStack;
         private Point stackPointerStartLoc;
         private int dY;
         private RichTextBox[,] actionTable;
@@ -47,9 +50,15 @@ namespace ModLR1
         private Dictionary<string, string> decodeDictionary;
         private Dictionary<string, string> encodeDictionary;
         private Dictionary<int, string> arifmeticOpDictionary;
-        private System.Windows.Forms.Timer timer;
-        private int timerInterval = 1000;
+        private System.Windows.Forms.Timer translatorTimer;
+        private System.Windows.Forms.Timer calcTimer;
+        private int traslatorTimerInterval = 1;
+        private int calcTimerInterval = 1;
         private bool isInputNotEmpty = false;
+        private Dictionary<string, double> varVals;
+        private bool isValuesFixed = false;
+        private int calcStackPointerStartY;
+        private bool postfixHasError = false;
 
         public MainForm()
         {   
@@ -76,13 +85,20 @@ namespace ModLR1
                 {table7_0, table7_1,table7_2,table7_3,table7_4,table7_5,table7_6,table7_7,table7_8,table7_9},
             };
             translatorStack = translator.getStack();
+            postfixCalculator = new PostfixCalculator();
+            calcStack = postfixCalculator.getStack();
             decodeDictionary = Translator.getFunctionDecodeDictionary();
             encodeDictionary = Translator.getFunctionEncodeDictionary();
             lastMarked = table0_0;
             dY = 20;
-            timer = new System.Windows.Forms.Timer();
-            timer.Interval = 1000;
-            timer.Tick += new EventHandler(processOneTactTick);
+            translatorTimer = new System.Windows.Forms.Timer();
+            translatorTimer.Interval = traslatorTimerInterval;
+            translatorTimer.Tick += new EventHandler(processOneTactTick);
+            calcTimer = new System.Windows.Forms.Timer();
+            calcTimer.Interval = calcTimerInterval;
+            calcTimer.Tick += processOneCalcTick;
+            varVals = new Dictionary<string, double>();
+            calcStackPointerStartY = calcStackPointerLabel.Top;
         }
 
 
@@ -140,7 +156,7 @@ namespace ModLR1
             updateInputInfix(inputTextBox.Text);
             if (isInputNotEmpty)
             { 
-                timer.Start();
+                translatorTimer.Start();
             }
         }
 
@@ -167,7 +183,11 @@ namespace ModLR1
                         updateInputInfix(inputTextBox.Text);
                 }
                 else
+                {
                     MessageBox.Show("Обработка строки завершена успешно!", "Успех", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    calcPostfixTextBox.Text = outputTextBox.Text;
+                    getCalculatorReady();
+                }
             }
         }
 
@@ -181,9 +201,11 @@ namespace ModLR1
             }
             else
             {
-                timer.Stop();
+                translatorTimer.Stop();
                 if(!infixHasError)
                 {
+                    calcPostfixTextBox.Text = outputTextBox.Text;
+                    getCalculatorReady();
                     DialogResult res = MessageBox.Show("Обработка строки завершена успешно!\nСбросить состояние транслятора?", "Успех", MessageBoxButtons.OKCancel, MessageBoxIcon.Information);
                     if(res == DialogResult.OK)
                     {
@@ -248,7 +270,7 @@ namespace ModLR1
                     }
                 case Translator.OP_RES_DEL_PAR:
                     {
-                        delPar();
+                        translatorDelPar();
                         break;
                     }
                 case Translator.OP_RES_SUCCESS:
@@ -258,7 +280,7 @@ namespace ModLR1
                 default:
                     {
                         if (operation == Translator.OP_POP)
-                            pop();
+                            translatorPop();
                         else
                         {
                             outputPictureBox.Show();
@@ -281,7 +303,7 @@ namespace ModLR1
             pushPictureBox.Show();
             removeFirstInfixSymbol();
             stackTextBox.Text = Translator.decodeFunctions(translatorStack.ToString());
-            moveStackPointer(-dY);
+            stackPointerLabel.Top -= dY;
         }
         
         //удаляет первый символ из входной строки 
@@ -294,31 +316,205 @@ namespace ModLR1
         }
 
 
-        private void pop()
+        private void translatorPop()
         {
             popPictureBox.Show();
-            moveStackPointer(dY);
+            stackPointerLabel.Top += dY;
         }
 
-        private void delPar()
+        private void translatorDelPar()
         {
-            moveStackPointer(dY);
+            stackPointerLabel.Top += dY;
             string encoded = Translator.encodeFunctions(interactiveInputTextBox.Text);
             string cutted = encoded.Substring(1, encoded.Length - 1);
             string decoded = Translator.decodeFunctions(cutted);
             interactiveInputTextBox.Text = decoded;
         }
 
-        private void moveStackPointer(int dY)
-        {
-            stackPointerLabel.Location = new Point(stackPointerLabel.Location.X, stackPointerLabel.Location.Y + dY);
-        }
-
         private void timerIntervalTrackBar_Scroll(object sender, EventArgs e)
         {
-            timerInterval = timerIntervalTrackBar.Value * 100;
-            timerIntervalLabel.Text = $"{timerInterval} милли секунд";
-            timer.Interval = timerInterval;
+            traslatorTimerInterval = timerIntervalTrackBar.Value * 100;
+            translatorTimerIntervalLabel.Text = $"{traslatorTimerInterval} милли секунд";
+            translatorTimer.Interval = traslatorTimerInterval == 0 ? 1: traslatorTimerInterval;
+        }
+
+        private void calcTimerIntervalTrackbar_Scroll(object sender, EventArgs e)
+        {
+            calcTimerInterval = calcTimerIntervalTrackbar.Value * 100;
+            calcTimerIntervalLabel.Text = $"{calcTimerInterval} милли секунд";
+            calcTimer.Interval = calcTimerInterval == 0 ? 1 : calcTimerInterval;
+        }
+
+        private void calcTactButton_Click(object sender, EventArgs e)
+        {
+            if (!isValuesFixed)
+            {
+                MessageBox.Show("Для данного выражения не инициарованы значения переменных", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+            processOneCalcTact();
+        }
+
+        private void calcAutoButton_Click(object sender, EventArgs e)
+        {
+            if (!isValuesFixed)
+            {
+                MessageBox.Show("Для данного выражения не инициарованы значения переменных", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+            calcTimer.Start();
+        }
+
+        //тик таймера калькулятора
+        private void processOneCalcTick(object sender, EventArgs e)
+        {
+            if (postfixCalculator.hasNext() && !postfixHasError)
+            {
+                processOneCalcTact();
+            }
+            else if (!postfixHasError)
+            {
+                calcTimer.Stop();
+                MessageBox.Show($"Строка обработана, результат вычислений = {calcStack.Poll()}", "Успех");
+            }
+            else
+            {
+                calcTimer.Stop();
+                MessageBox.Show("Ранее была получена ошибка вычислений, начните процесс заново!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+
+        //метод обработки одного такта калькулятора
+        private void processOneCalcTact()
+        {
+            if (postfixCalculator.hasNext() && !postfixHasError)
+            {
+                string opResult = null;
+                try
+                {
+                    opResult = postfixCalculator.doOperation(postfixCalculator.getNext());
+                }
+                catch (Exception exception)
+                {
+                    calcTimer.Stop();
+                    MessageBox.Show(exception.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    postfixHasError = true;
+                    return;
+                }
+                switch (opResult)
+                {
+                    case PostfixCalculator.PUSH_VAR:
+                        calcStackTextBox.Text = calcStack.ToString();
+                        int needToRemoveIndex = varVals[calcPostfixTextBox.Text[postfixCalculator.getPostfixPointer() - 1].ToString()].ToString().Length;
+                        calcPostfixInteractiveTextBox.Text = calcPostfixInteractiveTextBox.Text.Substring(needToRemoveIndex);
+                        calcStackPointerLabel.Top -= dY;
+                        break;
+                    case PostfixCalculator.PUSH_CALC_UNARY:
+                        needToRemoveIndex = decodeDictionary[postfixCalculator.getPostfixEncoded()[postfixCalculator.getPostfixPointer() - 1].ToString()].Length;
+                        calcPostfixInteractiveTextBox.Text = calcPostfixInteractiveTextBox.Text.Substring(needToRemoveIndex);
+                        calcStackTextBox.Text = calcStack.ToString();
+                        break;
+                    case PostfixCalculator.PUSH_CALC_BINARY:
+                        calcPostfixInteractiveTextBox.Text = calcPostfixInteractiveTextBox.Text.Substring(1);
+                        calcStackPointerLabel.Top += dY;
+                        calcStackTextBox.Text = calcStack.ToString();
+                        break;
+                }
+            }
+            else if(!postfixHasError)
+            {
+                MessageBox.Show($"Строка обработана, результат вычислений = {calcStack.Poll()}","Успех");
+            }
+            else
+            {
+                MessageBox.Show("Ранее была получена ошибка вычислений, начните процесс заново!","Ошибка",MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void getCalculatorReady()
+        {
+            isValuesFixed = false;
+            varsTextBox.Text = "";
+            HashSet<string> vars = new HashSet<string>();
+            string postfix = Translator.encodeFunctions(outputTextBox.Text);
+            for(int i = 0; i < postfix.Length; i++)
+            {
+                if (Regex.IsMatch(postfix[i].ToString(),"[a-zA-Z]"))
+                {
+                    vars.Add(postfix[i].ToString());
+                }
+            }
+            varVals.Clear();
+            foreach (string var in vars)
+            {
+                varsTextBox.AppendText($"Переменная {var} = 0\n");
+                varVals.Add(var,0);
+            }
+            
+        }
+
+        private void parseVariablesValues()
+        {
+            string parsingText = varsTextBox.Text;
+            int parsingIterator = 0;
+            int parsingIteratorLast = 0;
+            for(int i = 0; i < varVals.Count; i++)
+            {
+                if (parsingText.Substring(parsingIterator).StartsWith("Переменная "))
+                {
+                    while (parsingText[parsingIterator] != '\n')
+                    {
+                        parsingIterator++;
+                    }
+                    string[] splitedSubString = parsingText.Substring(parsingIteratorLast, parsingIterator - parsingIteratorLast).Split();
+                    varVals[splitedSubString[1]] = Double.Parse(splitedSubString[3].Replace(".",","));
+                    parsingIterator++;
+                    parsingIteratorLast = parsingIterator;
+                }
+            }
+        }
+
+        private void changeValuesInPostfixString()
+        {
+            string needToChange = calcPostfixTextBox.Text;
+            foreach (KeyValuePair<string, double> entry in varVals)
+            {
+                needToChange = needToChange.Replace(entry.Key, entry.Value.ToString());
+            }
+            calcPostfixInteractiveTextBox.Text = needToChange;
+        }
+
+        private void fixingValuesButton_Click(object sender, EventArgs e)
+        {
+            if (calcPostfixTextBox.Text.Equals(""))
+            {
+                MessageBox.Show("Невозможно задать переменные для пустого выражения!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+            try
+            {
+                parseVariablesValues();
+            }catch(Exception)
+            {
+                MessageBox.Show("Возникла ошибка во время парсинга. Возможно нарушен формат записи. Поля будут обновлены");
+                getCalculatorReady();
+            }
+            changeValuesInPostfixString();
+            isValuesFixed = true;
+            postfixCalculator.changePostfixExpression(calcPostfixTextBox.Text, varVals);
+            calcStackPointerLabel.Top = calcStackPointerStartY;
+            postfixHasError = false;
+        }
+
+        private void refreshValuesTextBoxButton_Click(object sender, EventArgs e)
+        {
+            if (calcPostfixTextBox.Text.Equals(""))
+            {
+                MessageBox.Show("Невозможное действие для пустого выражения!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+            getCalculatorReady();
         }
     }
 }

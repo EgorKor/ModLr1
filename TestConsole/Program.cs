@@ -1,5 +1,4 @@
 ﻿using ModLR1;
-Translator translator = new Translator();
 
-translator.changeInfixExpression("sin");
-translator.translateInfix();
+string defaultOperators = " +-*/^( )";
+Console.WriteLine(defaultOperators.IndexOf("+"));

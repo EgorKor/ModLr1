@@ -156,5 +156,11 @@ namespace ModLR1
         {
             Close();
         }
+
+        private void tgButton_Click(object sender, EventArgs e)
+        {
+            infixTextBox.Text += "tg";
+            inputStrElems.Add("tg");
+        }
     }
 }
